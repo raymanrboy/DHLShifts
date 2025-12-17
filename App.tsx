@@ -8,21 +8,17 @@ import {
   isSameDay, 
   addMonths, 
   subMonths,
-  isWeekend,
   startOfWeek,
   endOfWeek
 } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Wand2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Wand2, Loader2 } from 'lucide-react';
 
 import { ShiftData, DayStats } from './types';
 import { DEFAULT_SHIFT } from './constants';
-import { calculateEarnings } from './utils';
+import { calculateEarnings, storage } from './utils';
 import StatsPanel from './components/StatsPanel';
 import ShiftModal from './components/ShiftModal';
-
-// Storage Key
-const STORAGE_KEY = 'work-shift-calculator-data';
 
 const App: React.FC = () => {
   // --- State ---
@@ -31,24 +27,71 @@ const App: React.FC = () => {
   const [selectedShift, setSelectedShift] = useState<ShiftData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<number | string>('guest');
 
-  // --- Persistence ---
+  // --- Telegram Init & Theme ---
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setShifts(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse stored shifts", e);
-      }
+    const tg = window.Telegram.WebApp;
+    
+    // Initialize
+    tg.ready();
+    tg.expand();
+    tg.enableClosingConfirmation();
+
+    // Get User ID
+    if (tg.initDataUnsafe?.user?.id) {
+        setUserId(tg.initDataUnsafe.user.id);
     }
+
+    // Handle Theme
+    const applyTheme = () => {
+      const isDark = tg.colorScheme === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyTheme();
+    
+    // Listen for theme changes
+    tg.onEvent('themeChanged', applyTheme);
+    return () => tg.offEvent('themeChanged', applyTheme);
   }, []);
 
+  // --- Storage Key Construction ---
+  const storageKey = useMemo(() => `shifts_data_v1_${userId}`, [userId]);
+
+  // --- Load Data ---
   useEffect(() => {
-    if (Object.keys(shifts).length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(shifts));
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const data = await storage.get(storageKey);
+        if (data) {
+          setShifts(data);
+        }
+      } catch (e) {
+        console.error("Failed to load shifts", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [storageKey]);
+
+  // --- Save Data ---
+  useEffect(() => {
+    // Debounce save or save immediately if not loading
+    if (!isLoading && Object.keys(shifts).length > 0) {
+       const handler = setTimeout(() => {
+         storage.set(storageKey, shifts);
+       }, 500);
+       return () => clearTimeout(handler);
     }
-  }, [shifts]);
+  }, [shifts, storageKey, isLoading]);
 
   // Handle scroll for header effect
   useEffect(() => {
@@ -147,7 +190,11 @@ const App: React.FC = () => {
     });
 
     setShifts(newShifts);
-    alert(`Додано ${addedCount} робочих змін (Пн-Пт)`);
+    
+    // Using Telegram's HapticFeedback
+    if (window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
   };
 
   const currentMonthStats = useMemo((): DayStats => {
@@ -180,8 +227,12 @@ const App: React.FC = () => {
     const { totalPay } = calculateEarnings(shift.startTime, shift.endTime);
 
     // Dynamic classes based on state to create depth
-    const cellBaseClass = "relative min-h-[90px] p-2 flex flex-col justify-between transition-all duration-200 select-none border-b border-r border-slate-100/50 last:border-r-0";
-    const bgClass = !isCurrentMonth ? 'bg-slate-50/30 text-slate-300' : 'bg-transparent active:bg-slate-50';
+    // Dark mode: darker bg, lighter borders
+    const cellBaseClass = "relative min-h-[90px] p-2 flex flex-col justify-between transition-all duration-200 select-none border-b border-r border-slate-100/50 dark:border-white/5 last:border-r-0";
+    
+    const bgClass = !isCurrentMonth 
+        ? 'bg-slate-50/30 dark:bg-white/5 text-slate-300 dark:text-gray-600' 
+        : 'bg-transparent active:bg-slate-50 dark:active:bg-white/5';
 
     return (
       <div 
@@ -193,14 +244,14 @@ const App: React.FC = () => {
             <span className={`text-sm font-bold rounded-full w-8 h-8 flex items-center justify-center transition-all
                 ${isToday 
                     ? 'bg-[#D40511] text-white shadow-[0_4px_10px_rgba(212,5,17,0.4)]' 
-                    : 'text-slate-600'}
+                    : 'text-slate-600 dark:text-gray-300'}
             `}>
                 {format(day, 'd')}
             </span>
             {shift.isWorkDay && (
                 <div className={`
                     w-2.5 h-2.5 rounded-full shadow-sm
-                    ${shift.isCompleted ? 'bg-[#D40511]' : 'bg-[#FFCC00] ring-2 ring-white'}
+                    ${shift.isCompleted ? 'bg-[#D40511]' : 'bg-[#FFCC00] ring-2 ring-white dark:ring-[#2d2d2d]'}
                 `}/>
             )}
         </div>
@@ -211,8 +262,8 @@ const App: React.FC = () => {
                     flex flex-col items-center justify-center min-w-[2.5rem]
                     py-1.5 px-2 rounded-xl transition-all
                     ${shift.isCompleted 
-                        ? 'bg-gradient-to-br from-red-50 to-white text-[#D40511] shadow-sm border border-red-100' 
-                        : 'bg-white text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-slate-100'}
+                        ? 'bg-gradient-to-br from-red-50 to-white dark:from-red-900/20 dark:to-red-900/10 text-[#D40511] dark:text-red-400 shadow-sm border border-red-100 dark:border-red-900/30' 
+                        : 'bg-white dark:bg-[#333] text-slate-400 dark:text-gray-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] dark:shadow-none border border-slate-100 dark:border-white/10'}
                 `}>
                     <span className="text-xs md:text-sm font-extrabold leading-none">
                         {Math.round(totalPay)}
@@ -227,32 +278,40 @@ const App: React.FC = () => {
     );
   };
 
+  if (isLoading) {
+      return (
+          <div className="min-h-screen bg-tg-bg flex items-center justify-center">
+              <Loader2 className="animate-spin text-tg-button w-10 h-10" />
+          </div>
+      );
+  }
+
   return (
-    <div className="min-h-screen bg-[#F2F4F8] text-slate-800 pb-32">
+    <div className="min-h-screen bg-tg-bg text-tg-text pb-32 transition-colors duration-300">
       {/* Soft Header */}
       <header className={`sticky top-0 z-30 transition-all duration-300 px-4 pt-4 pb-2 ${scrolled ? 'pt-2' : 'pt-6'}`}>
-        <div className="bg-white/80 backdrop-blur-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] rounded-[2rem] p-4 flex items-center justify-between border border-white">
+        <div className="bg-white/80 dark:bg-[#242424]/90 backdrop-blur-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] dark:shadow-black/50 rounded-[2rem] p-4 flex items-center justify-between border border-white dark:border-white/5">
             <div className="flex items-center gap-3 pl-2">
                 <div className="bg-gradient-to-br from-[#D40511] to-[#b0040e] text-white p-2.5 rounded-2xl shadow-lg shadow-red-500/20">
                     <CalendarIcon size={22} />
                 </div>
                 <div>
-                    <h1 className="font-extrabold text-xl leading-none text-slate-800">
+                    <h1 className="font-extrabold text-xl leading-none text-slate-800 dark:text-white">
                         Work<span className="text-[#D40511]">Shift</span>
                     </h1>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 ml-0.5">Scheduler</p>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest mt-0.5 ml-0.5">Scheduler</p>
                 </div>
             </div>
             
             {/* Month Navigator - Inset Style */}
-            <div className="flex items-center bg-slate-100/50 p-1.5 rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
-                <button onClick={handlePrevMonth} className="w-9 h-9 flex items-center justify-center bg-white hover:bg-white rounded-xl shadow-sm text-slate-600 transition-all active:scale-95 border border-slate-100">
+            <div className="flex items-center bg-slate-100/50 dark:bg-[#1a1a1a] p-1.5 rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]">
+                <button onClick={handlePrevMonth} className="w-9 h-9 flex items-center justify-center bg-white dark:bg-[#2a2a2a] hover:bg-white dark:hover:bg-[#333] rounded-xl shadow-sm text-slate-600 dark:text-gray-300 transition-all active:scale-95 border border-slate-100 dark:border-white/5">
                     <ChevronLeft size={18} />
                 </button>
-                <span className="w-28 text-center text-sm font-bold capitalize truncate text-slate-700">
+                <span className="w-28 text-center text-sm font-bold capitalize truncate text-slate-700 dark:text-gray-200">
                     {format(currentDate, 'LLLL', { locale: uk })}
                 </span>
-                <button onClick={handleNextMonth} className="w-9 h-9 flex items-center justify-center bg-white hover:bg-white rounded-xl shadow-sm text-slate-600 transition-all active:scale-95 border border-slate-100">
+                <button onClick={handleNextMonth} className="w-9 h-9 flex items-center justify-center bg-white dark:bg-[#2a2a2a] hover:bg-white dark:hover:bg-[#333] rounded-xl shadow-sm text-slate-600 dark:text-gray-300 transition-all active:scale-95 border border-slate-100 dark:border-white/5">
                     <ChevronRight size={18} />
                 </button>
             </div>
@@ -264,14 +323,14 @@ const App: React.FC = () => {
         <StatsPanel stats={currentMonthStats} />
 
         {/* Calendar Card - Claymorphism Style */}
-        <div className="bg-white rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-white/60 overflow-hidden relative">
+        <div className="bg-white dark:bg-[#242424] rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] dark:shadow-black/40 border border-white/60 dark:border-white/5 overflow-hidden relative transition-colors duration-300">
             {/* Decorative soft gradient at top */}
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-slate-50/50 to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-slate-50/50 dark:from-white/5 to-transparent pointer-events-none" />
             
             {/* Weekday Headers */}
-            <div className="grid grid-cols-7 relative z-10 pt-4 pb-2">
+            <div className="grid grid-cols-7 relative z-10 pt-4 pb-2 border-b border-slate-100/50 dark:border-white/5">
                 {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map((day, i) => (
-                    <div key={day} className={`text-center text-[11px] font-extrabold uppercase tracking-wider ${i >= 5 ? 'text-[#D40511]/80' : 'text-slate-400'}`}>
+                    <div key={day} className={`text-center text-[11px] font-extrabold uppercase tracking-wider ${i >= 5 ? 'text-[#D40511]/80 dark:text-red-400' : 'text-slate-400 dark:text-gray-500'}`}>
                         {day}
                     </div>
                 ))}
@@ -288,7 +347,7 @@ const App: React.FC = () => {
       <div className="fixed bottom-8 right-6 z-20">
         <button 
             onClick={fillStandardMonth}
-            className="group flex items-center justify-center w-16 h-16 rounded-[2rem] bg-[#222] text-white shadow-[0_15px_30px_-5px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 border-4 border-white/10"
+            className="group flex items-center justify-center w-16 h-16 rounded-[2rem] bg-[#222] dark:bg-[#D40511] text-white shadow-[0_15px_30px_-5px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 border-4 border-white/10 dark:border-white/20"
         >
             <Wand2 size={24} className="group-hover:rotate-12 transition-transform" />
         </button>
