@@ -1,51 +1,33 @@
-import React, { useState } from 'react';
-import { X, Calendar as CalendarIcon, Check } from 'lucide-react';
+import React from 'react';
+import { X, Calendar as CalendarIcon, Minus, Plus, Trash2 } from 'lucide-react';
+import { ShiftData } from '../types';
+import { adjustTime, calculateEarnings, formatCurrency } from '../utils';
 
-interface AutoFillModalProps {
+interface ShiftModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (selectedDayIndices: number[]) => void;
+  shift: ShiftData;
+  onSave: (updatedShift: ShiftData) => void;
+  onDelete: () => void; 
 }
 
-const AutoFillModal: React.FC<AutoFillModalProps> = ({ isOpen, onClose, onGenerate }) => {
-  // Default to Mon-Fri (1, 2, 3, 4, 5). 0 is Sunday, 6 is Saturday.
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
-
+const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave, onDelete }) => {
   if (!isOpen) return null;
 
-  const toggleDay = (dayIndex: number) => {
-    setSelectedDays(prev => {
-      if (prev.includes(dayIndex)) {
-        return prev.filter(d => d !== dayIndex);
-      } else {
-        return [...prev, dayIndex];
-      }
-    });
-    
-    // Haptic feedback for selection (v6.1+)
-    const tg = window.Telegram?.WebApp;
-    if (tg && tg.isVersionAtLeast && tg.isVersionAtLeast('6.1') && tg.HapticFeedback) {
-      tg.HapticFeedback.selectionChanged();
-    }
+  const earnings = calculateEarnings(shift.startTime, shift.endTime);
+
+  const handleTimeChange = (field: 'startTime' | 'endTime', delta: number) => {
+    const newValue = adjustTime(shift[field], delta);
+    onSave({ ...shift, [field]: newValue });
   };
 
-  const handleGenerate = () => {
-    onGenerate(selectedDays);
-    onClose();
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onSave({ ...shift, [e.target.name]: e.target.value });
   };
 
-  const DAYS = [
-    { label: 'Нд', index: 0 },
-    { label: 'Пн', index: 1 },
-    { label: 'Вт', index: 2 },
-    { label: 'Ср', index: 3 },
-    { label: 'Чт', index: 4 },
-    { label: 'Пт', index: 5 },
-    { label: 'Сб', index: 6 },
-  ];
-
-  // Reorder to start from Monday for display logic (EU standard)
-  const DISPLAY_DAYS = [...DAYS.slice(1), DAYS[0]];
+  const toggleCompleted = () => {
+    onSave({ ...shift, isCompleted: !shift.isCompleted });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center pointer-events-none">
@@ -55,7 +37,7 @@ const AutoFillModal: React.FC<AutoFillModalProps> = ({ isOpen, onClose, onGenera
         onClick={onClose}
       />
       
-      {/* Modal Card */}
+      {/* Modal Card - Soft UI Style */}
       <div className="pointer-events-auto relative bg-white dark:bg-[#1e1e1e] w-full md:w-[480px] rounded-t-[3rem] md:rounded-[3rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] dark:shadow-black/60 overflow-hidden animate-in slide-in-from-bottom duration-300 md:zoom-in-95 border border-white dark:border-white/5 transition-colors duration-300">
         
         {/* Mobile Drag Handle */}
@@ -66,10 +48,10 @@ const AutoFillModal: React.FC<AutoFillModalProps> = ({ isOpen, onClose, onGenera
         {/* Header */}
         <div className="px-8 pt-8 pb-4 flex justify-between items-start">
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Автозаповнення</h2>
+            <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Налаштування</h2>
             <div className="flex items-center gap-2 mt-1 text-slate-400 dark:text-gray-500 font-medium">
                 <CalendarIcon size={16} />
-                <span>Оберіть робочі дні</span>
+                <span>{shift.date}</span>
             </div>
           </div>
           <button 
@@ -83,40 +65,99 @@ const AutoFillModal: React.FC<AutoFillModalProps> = ({ isOpen, onClose, onGenera
         {/* Body */}
         <div className="px-8 pb-8 space-y-8">
           
-          <div className="grid grid-cols-4 gap-3">
-             {DISPLAY_DAYS.map((day) => {
-                const isSelected = selectedDays.includes(day.index);
-                return (
-                    <button
-                        key={day.index}
-                        onClick={() => toggleDay(day.index)}
-                        className={`
-                            aspect-square rounded-2xl flex flex-col items-center justify-center transition-all duration-200 border-2
-                            ${isSelected 
-                                ? 'bg-[#D40511] border-[#D40511] text-white shadow-lg shadow-red-500/20' 
-                                : 'bg-slate-50 dark:bg-[#2a2a2a] border-transparent text-slate-400 dark:text-gray-500 hover:bg-slate-100 dark:hover:bg-[#333]'}
-                        `}
-                    >
-                        <span className="text-lg font-bold">{day.label}</span>
-                        {isSelected && <Check size={16} className="mt-1 opacity-60" />}
-                    </button>
-                );
-             })}
+          {/* Custom Switch Toggle for Status */}
+          <div className="flex items-center justify-between">
+             <span className="font-bold text-slate-700 dark:text-gray-300 text-lg">Зміна відпрацьована?</span>
+             <button 
+                onClick={toggleCompleted}
+                className={`w-16 h-9 rounded-full relative transition-all duration-300 shadow-inner ${
+                  shift.isCompleted ? 'bg-[#D40511]' : 'bg-slate-200 dark:bg-[#333]'
+                }`}
+             >
+                <div className={`absolute top-1 bottom-1 left-1 w-7 h-7 bg-white dark:bg-gray-200 rounded-full shadow-md transition-transform duration-300 ${
+                    shift.isCompleted ? 'translate-x-7' : 'translate-x-0'
+                }`} />
+             </button>
           </div>
 
-          <div className="bg-slate-50 dark:bg-[#1a1a1a] rounded-3xl p-6 border border-slate-100 dark:border-white/5 shadow-[inset_0_2px_6px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)]">
-             <p className="text-sm font-medium text-slate-500 dark:text-gray-400">
-                Це створить робочі зміни на всі вибрані дні поточного місяця, які ще не мають змін.
-             </p>
+          <div className="h-px bg-slate-100 dark:bg-white/5 w-full" />
+
+          {/* Time Inputs - Styled like 'Input field' in reference */}
+          <div className="space-y-6">
+             {/* Start Time */}
+             <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-500 dark:text-gray-500 flex items-center gap-2">
+                    Початок
+                </label>
+                <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#1a1a1a] p-1.5 rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-white/5">
+                     <button onClick={() => handleTimeChange('startTime', -1)} className="w-10 h-10 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm dark:shadow-black/20 text-slate-600 dark:text-gray-300 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+                        <Minus size={18} />
+                     </button>
+                     <input 
+                      type="time" 
+                      name="startTime"
+                      value={shift.startTime}
+                      onChange={handleValueChange}
+                      className="bg-transparent font-extrabold text-lg text-slate-800 dark:text-white text-center w-24 outline-none"
+                    />
+                     <button onClick={() => handleTimeChange('startTime', 1)} className="w-10 h-10 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm dark:shadow-black/20 text-slate-600 dark:text-gray-300 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+                        <Plus size={18} />
+                     </button>
+                </div>
+             </div>
+
+             {/* End Time */}
+             <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-500 dark:text-gray-500 flex items-center gap-2">
+                    Кінець
+                </label>
+                <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#1a1a1a] p-1.5 rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-white/5">
+                     <button onClick={() => handleTimeChange('endTime', -1)} className="w-10 h-10 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm dark:shadow-black/20 text-slate-600 dark:text-gray-300 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+                        <Minus size={18} />
+                     </button>
+                     <input 
+                      type="time" 
+                      name="endTime"
+                      value={shift.endTime}
+                      onChange={handleValueChange}
+                      className="bg-transparent font-extrabold text-lg text-slate-800 dark:text-white text-center w-24 outline-none"
+                    />
+                     <button onClick={() => handleTimeChange('endTime', 1)} className="w-10 h-10 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm dark:shadow-black/20 text-slate-600 dark:text-gray-300 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+                        <Plus size={18} />
+                     </button>
+                </div>
+             </div>
           </div>
 
-          <button 
-            onClick={handleGenerate}
-            disabled={selectedDays.length === 0}
-            className="w-full h-16 rounded-[1.5rem] bg-[#222] dark:bg-white text-white dark:text-black font-bold text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-300 dark:shadow-none disabled:opacity-50 disabled:scale-100"
-          >
-            Згенерувати графік
-          </button>
+          {/* Result Card (Inset style) */}
+          <div className="bg-slate-50 dark:bg-[#1a1a1a] rounded-3xl p-6 border border-slate-100 dark:border-white/5 shadow-[inset_0_2px_6px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)] flex justify-between items-center">
+             <div>
+                <p className="text-xs font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">Разом за день</p>
+                <div className="flex gap-3 text-xs font-medium text-slate-500 dark:text-gray-400">
+                   <span>День: {earnings.dayHours}ч</span>
+                   <span>Ніч: {earnings.nightHours}ч</span>
+                </div>
+             </div>
+             <div className="text-right">
+                <span className="block text-3xl font-black text-[#D40511] dark:text-red-400">{Math.round(earnings.totalPay)}<span className="text-lg ml-1 font-bold text-slate-400 dark:text-gray-600">zl</span></span>
+             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 pt-4">
+             <button 
+                onClick={onDelete}
+                className="w-16 h-16 flex items-center justify-center rounded-[1.5rem] bg-white dark:bg-[#2d2d2d] border-2 border-slate-100 dark:border-white/5 text-slate-400 dark:text-gray-400 hover:text-red-500 hover:border-red-100 dark:hover:border-red-900 transition-colors shadow-sm dark:shadow-black/20"
+            >
+                <Trash2 size={24} />
+            </button>
+            <button 
+                onClick={onClose}
+                className="flex-1 h-16 rounded-[1.5rem] bg-[#222] dark:bg-white text-white dark:text-black font-bold text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-300 dark:shadow-none"
+            >
+                Зберегти зміни
+            </button>
+          </div>
 
         </div>
       </div>
@@ -124,4 +165,4 @@ const AutoFillModal: React.FC<AutoFillModalProps> = ({ isOpen, onClose, onGenera
   );
 };
 
-export default AutoFillModal;
+export default ShiftModal;
