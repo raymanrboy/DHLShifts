@@ -4,7 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>WorkShift Calculator</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?59"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class', // Enable manual dark mode toggling via class
+        theme: {
+          extend: {
+            colors: {
+              tg: {
+                bg: 'var(--tg-theme-bg-color, #F2F4F8)',
+                secondary: 'var(--tg-theme-secondary-bg-color, #ffffff)',
+                text: 'var(--tg-theme-text-color, #1f2937)',
+                hint: 'var(--tg-theme-hint-color, #9ca3af)',
+                button: 'var(--tg-theme-button-color, #D40511)',
+                buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
       /* Hide scrollbar for Chrome, Safari and Opera */
       .no-scrollbar::-webkit-scrollbar {
@@ -17,7 +37,9 @@
       }
       body {
         -webkit-tap-highlight-color: transparent;
-        background-color: #F2F4F8; /* Soft gray background like the reference image */
+        background-color: var(--tg-theme-bg-color, #F2F4F8);
+        color: var(--tg-theme-text-color, #000000);
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
     </style>
   <script type="importmap">
