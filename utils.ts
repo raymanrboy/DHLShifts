@@ -1,5 +1,5 @@
 import { RATES, TIME_ZONES } from './constants';
-import { EarningsResult } from './types';
+import { EarningsResult, ShiftData } from './types';
 
 /**
  * Parses "HH:mm" string to decimal hours (e.g., "02:30" -> 2.5)
@@ -32,10 +32,6 @@ export const adjustTime = (timeStr: string, deltaHours: number): string => {
 
 /**
  * Calculates earnings for a shift based on day/night rates.
- * Assumes shifts are within a single 24h period or wrap simply.
- * For this specific app logic:
- * Night Rate: 00:00 - 06:00
- * Day Rate: 06:00 - 24:00
  */
 export const calculateEarnings = (startStr: string, endStr: string): EarningsResult => {
   let start = timeToDecimal(startStr);
@@ -51,14 +47,6 @@ export const calculateEarnings = (startStr: string, endStr: string): EarningsRes
 
   let nightHours = 0;
   let dayHours = 0;
-
-  // We analyze the shift hour by hour (or segment by segment)
-  // Simplified logic for the specified rules:
-  // We need to calculate intersection of [start, end] with [0, 6] (Night) and [6, 24] (Day)
-  // Since we might go past 24 (next day), we treat:
-  // 00:00-06:00 (Day 1) -> Night
-  // 06:00-24:00 (Day 1) -> Day
-  // 24:00-30:00 (Day 2 00:00-06:00) -> Night
   
   const nightZone1_Start = 0;
   const nightZone1_End = TIME_ZONES.NIGHT_END; // 6
@@ -81,9 +69,6 @@ export const calculateEarnings = (startStr: string, endStr: string): EarningsRes
   nightHours = night1 + night2;
   dayHours = day;
   
-  // Edge case: if shift goes beyond 30 (next day 6am), remaining is day. 
-  // But standard usage described usually fits 02:00-10:00. 
-  // If end > 30, add to day.
   if (end > nightZone2_End) {
       dayHours += (end - nightZone2_End);
   }
@@ -98,5 +83,86 @@ export const calculateEarnings = (startStr: string, endStr: string): EarningsRes
 };
 
 export const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'PLN' }).format(amount);
+  return new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 }).format(amount);
+};
+
+// --- Cloud Storage Helpers ---
+
+const isCloudStorageSupported = (): boolean => {
+  const tg = window.Telegram?.WebApp;
+  // CloudStorage was introduced in Bot API 6.9
+  return tg && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('6.9');
+};
+
+export const storage = {
+  // Try to use Telegram CloudStorage, fallback to localStorage
+  get: async (key: string): Promise<any | null> => {
+    // 1. Always attempt to read from localStorage first for immediate data
+    const local = localStorage.getItem(key);
+    let data = local ? JSON.parse(local) : null;
+
+    // 2. If CloudStorage is supported, try to sync/fetch from there
+    if (isCloudStorageSupported()) {
+      try {
+        const cloudValue = await new Promise<string | null>((resolve) => {
+           window.Telegram.WebApp.CloudStorage.getItem(key, (err, value) => {
+              if (err) {
+                // If error occurs (e.g. timeout), just resolve null and use local
+                console.warn('CloudStorage read error:', err);
+                resolve(null);
+              } else {
+                resolve(value);
+              }
+           });
+        });
+
+        if (cloudValue) {
+          // If we got data from cloud, use it (it's the source of truth)
+          try {
+            data = JSON.parse(cloudValue);
+            // Optionally update local cache
+            localStorage.setItem(key, cloudValue);
+          } catch (e) {
+            console.error('Failed to parse cloud data', e);
+          }
+        }
+      } catch (e) {
+        console.warn('CloudStorage access failed:', e);
+      }
+    }
+    
+    return data;
+  },
+
+  set: async (key: string, value: any): Promise<boolean> => {
+    const stringValue = JSON.stringify(value);
+    
+    // 1. Save to local storage
+    try {
+        localStorage.setItem(key, stringValue);
+    } catch (e) {
+        console.error('LocalStorage write error:', e);
+    }
+
+    // 2. Sync to CloudStorage if supported
+    if (isCloudStorageSupported()) {
+      try {
+        return new Promise((resolve) => {
+          window.Telegram.WebApp.CloudStorage.setItem(key, stringValue, (err, stored) => {
+            if (err) {
+              console.warn('CloudStorage write error:', err);
+              resolve(false);
+            } else {
+              resolve(stored);
+            }
+          });
+        });
+      } catch (e) {
+        console.warn('CloudStorage access failed:', e);
+        return false;
+      }
+    }
+    
+    return true;
+  }
 };
