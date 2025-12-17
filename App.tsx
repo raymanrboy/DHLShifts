@@ -305,8 +305,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-tg-bg text-tg-text pb-32 transition-colors duration-300">
-      {/* Soft Header */}
-      <header className={`sticky top-0 z-30 transition-all duration-300 px-4 pt-4 pb-2 ${scrolled ? 'pt-2' : 'pt-6'}`}>
+      
+      {/* Spacer to compensate for Fixed Header */}
+      <div className="h-28"></div>
+
+      {/* Fixed Header */}
+      <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 px-4 pt-4 pb-2 ${scrolled ? 'pt-2' : 'pt-6'}`}>
         <div className="bg-white/80 dark:bg-[#242424]/90 backdrop-blur-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] dark:shadow-black/50 rounded-[2rem] p-4 flex items-center justify-between border border-white dark:border-white/5">
             <div className="flex items-center gap-3 pl-2">
                 <div className="bg-gradient-to-br from-[#D40511] to-[#b0040e] text-white p-2.5 rounded-2xl shadow-lg shadow-red-500/20">
