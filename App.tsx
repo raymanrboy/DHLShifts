@@ -19,6 +19,7 @@ import { DEFAULT_SHIFT } from './constants';
 import { calculateEarnings, storage } from './utils';
 import StatsPanel from './components/StatsPanel';
 import ShiftModal from './components/ShiftModal';
+import AutoFillModal from './components/AutoFillModal';
 
 const App: React.FC = () => {
   // --- State ---
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   const [shifts, setShifts] = useState<Record<string, ShiftData>>({});
   const [selectedShift, setSelectedShift] = useState<ShiftData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | string>('guest');
@@ -37,7 +39,12 @@ const App: React.FC = () => {
     // Initialize
     tg.ready();
     tg.expand();
-    tg.enableClosingConfirmation();
+    
+    // Check version before calling methods not supported in 6.0
+    // enableClosingConfirmation is available since 6.2
+    if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+        tg.enableClosingConfirmation();
+    }
 
     // Get User ID
     if (tg.initDataUnsafe?.user?.id) {
@@ -165,17 +172,17 @@ const App: React.FC = () => {
     }
   };
 
-  const fillStandardMonth = () => {
+  const handleAutoFill = (selectedDayIndices: number[]) => {
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
     const newShifts = { ...shifts };
     
     let addedCount = 0;
     daysInMonth.forEach(day => {
         const dayOfWeek = day.getDay();
-        const isWeekDay = dayOfWeek !== 0 && dayOfWeek !== 6;
         const dateKey = format(day, 'yyyy-MM-dd');
 
-        if (isWeekDay && (!newShifts[dateKey] || !newShifts[dateKey].isWorkDay)) {
+        // Check if this day of week is selected AND (it's not already a shift OR it is a shift but not a workday)
+        if (selectedDayIndices.includes(dayOfWeek) && (!newShifts[dateKey] || !newShifts[dateKey].isWorkDay)) {
             const isMonday = dayOfWeek === 1;
             newShifts[dateKey] = {
                 id: dateKey,
@@ -191,9 +198,19 @@ const App: React.FC = () => {
 
     setShifts(newShifts);
     
-    // Using Telegram's HapticFeedback
-    if (window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    const tg = window.Telegram?.WebApp;
+
+    // Using Telegram's HapticFeedback (available since 6.1)
+    if (tg && tg.isVersionAtLeast && tg.isVersionAtLeast('6.1') && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred('success');
+    }
+
+    // Using showAlert (available since 6.2)
+    if (tg && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2') && tg.showAlert) {
+       tg.showAlert(`Додано ${addedCount} робочих змін`);
+    } else {
+       // Fallback for older versions (e.g. 6.0)
+       alert(`Додано ${addedCount} робочих змін`);
     }
   };
 
@@ -346,7 +363,7 @@ const App: React.FC = () => {
       {/* Floating Action Button (FAB) */}
       <div className="fixed bottom-8 right-6 z-20">
         <button 
-            onClick={fillStandardMonth}
+            onClick={() => setIsAutoFillModalOpen(true)}
             className="group flex items-center justify-center w-16 h-16 rounded-[2rem] bg-[#222] dark:bg-[#D40511] text-white shadow-[0_15px_30px_-5px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 border-4 border-white/10 dark:border-white/20"
         >
             <Wand2 size={24} className="group-hover:rotate-12 transition-transform" />
@@ -363,6 +380,12 @@ const App: React.FC = () => {
             onDelete={handleDeleteShift}
         />
       )}
+      
+      <AutoFillModal 
+        isOpen={isAutoFillModalOpen}
+        onClose={() => setIsAutoFillModalOpen(false)}
+        onGenerate={handleAutoFill}
+      />
     </div>
   );
 };
