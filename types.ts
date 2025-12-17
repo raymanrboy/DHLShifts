@@ -68,6 +68,7 @@ export interface TelegramWebApp {
     getItem: (key: string, callback: (err: Error | null, value: string | null) => void) => void;
   };
   HapticFeedback: TelegramHapticFeedback;
+  showAlert: (message: string, callback?: () => void) => void;
   onEvent: (eventType: string, eventHandler: () => void) => void;
   offEvent: (eventType: string, eventHandler: () => void) => void;
 }
