@@ -1,12 +1,13 @@
-import { RATES, TIME_ZONES } from './constants';
-import { EarningsResult, ShiftData } from './types';
+import { TIME_ZONES } from './constants';
+import { EarningsResult, Rates } from './types';
 
 /**
  * Parses "HH:mm" string to decimal hours (e.g., "02:30" -> 2.5)
  */
 export const timeToDecimal = (timeStr: string): number => {
+  if (!timeStr) return 0;
   const [hours, minutes] = timeStr.split(':').map(Number);
-  return hours + minutes / 60;
+  return (hours || 0) + (minutes || 0) / 60;
 };
 
 /**
@@ -14,11 +15,17 @@ export const timeToDecimal = (timeStr: string): number => {
  */
 export const decimalToTime = (decimal: number): string => {
   let normalized = decimal;
-  if (normalized < 0) normalized += 24;
-  if (normalized >= 24) normalized -= 24;
+  while (normalized < 0) normalized += 24;
+  while (normalized >= 24) normalized -= 24;
   
   const hours = Math.floor(normalized);
   const minutes = Math.round((normalized - hours) * 60);
+  
+  // Handle rounding up to 60 minutes
+  if (minutes === 60) {
+    return `${(hours + 1).toString().padStart(2, '0')}:00`;
+  }
+  
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
@@ -33,12 +40,11 @@ export const adjustTime = (timeStr: string, deltaHours: number): string => {
 /**
  * Calculates earnings for a shift based on day/night rates.
  */
-export const calculateEarnings = (startStr: string, endStr: string): EarningsResult => {
+export const calculateEarnings = (startStr: string, endStr: string, rates: Rates): EarningsResult => {
   let start = timeToDecimal(startStr);
   let end = timeToDecimal(endStr);
 
-  // Handle overnight shifts (e.g. 22:00 to 06:00) by adding 24 to end if it's smaller
-  if (end < start) {
+  if (end <= start) {
     end += 24;
   }
 
@@ -49,13 +55,12 @@ export const calculateEarnings = (startStr: string, endStr: string): EarningsRes
   let dayHours = 0;
   
   const nightZone1_Start = 0;
-  const nightZone1_End = TIME_ZONES.NIGHT_END; // 6
-  const dayZone_Start = TIME_ZONES.NIGHT_END; // 6
+  const nightZone1_End = TIME_ZONES.NIGHT_END; 
+  const dayZone_Start = TIME_ZONES.NIGHT_END; 
   const dayZone_End = 24;
   const nightZone2_Start = 24;
-  const nightZone2_End = 24 + TIME_ZONES.NIGHT_END; // 30
+  const nightZone2_End = 24 + TIME_ZONES.NIGHT_END; 
 
-  // Helper to get overlap
   const getOverlap = (s1: number, e1: number, s2: number, e2: number) => {
     const startObj = Math.max(s1, s2);
     const endObj = Math.min(e1, e2);
@@ -73,11 +78,11 @@ export const calculateEarnings = (startStr: string, endStr: string): EarningsRes
       dayHours += (end - nightZone2_End);
   }
 
-  const totalPay = (nightHours * RATES.NIGHT) + (dayHours * RATES.DAY);
+  const totalPay = (nightHours * rates.night) + (dayHours * rates.day);
 
   return {
-    dayHours,
-    nightHours,
+    dayHours: Number(dayHours.toFixed(2)),
+    nightHours: Number(nightHours.toFixed(2)),
     totalPay
   };
 };
@@ -90,79 +95,50 @@ export const formatCurrency = (amount: number) => {
 
 const isCloudStorageSupported = (): boolean => {
   const tg = window.Telegram?.WebApp;
-  // CloudStorage was introduced in Bot API 6.9
-  return tg && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('6.9');
+  return !!(tg && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9'));
 };
 
 export const storage = {
-  // Try to use Telegram CloudStorage, fallback to localStorage
   get: async (key: string): Promise<any | null> => {
-    // 1. Always attempt to read from localStorage first for immediate data
-    const local = localStorage.getItem(key);
-    let data = local ? JSON.parse(local) : null;
-
-    // 2. If CloudStorage is supported, try to sync/fetch from there
+    // Try cloud first if supported
     if (isCloudStorageSupported()) {
       try {
         const cloudValue = await new Promise<string | null>((resolve) => {
            window.Telegram.WebApp.CloudStorage.getItem(key, (err, value) => {
-              if (err) {
-                // If error occurs (e.g. timeout), just resolve null and use local
-                console.warn('CloudStorage read error:', err);
-                resolve(null);
-              } else {
-                resolve(value);
-              }
+              if (err) resolve(null);
+              else resolve(value || null);
            });
         });
 
         if (cloudValue) {
-          // If we got data from cloud, use it (it's the source of truth)
-          try {
-            data = JSON.parse(cloudValue);
-            // Optionally update local cache
-            localStorage.setItem(key, cloudValue);
-          } catch (e) {
-            console.error('Failed to parse cloud data', e);
-          }
+          localStorage.setItem(key, cloudValue);
+          return JSON.parse(cloudValue);
         }
       } catch (e) {
         console.warn('CloudStorage access failed:', e);
       }
     }
     
-    return data;
+    // Fallback to local
+    const local = localStorage.getItem(key);
+    return local ? JSON.parse(local) : null;
   },
 
   set: async (key: string, value: any): Promise<boolean> => {
     const stringValue = JSON.stringify(value);
-    
-    // 1. Save to local storage
-    try {
-        localStorage.setItem(key, stringValue);
-    } catch (e) {
-        console.error('LocalStorage write error:', e);
-    }
+    localStorage.setItem(key, stringValue);
 
-    // 2. Sync to CloudStorage if supported
     if (isCloudStorageSupported()) {
       try {
-        return new Promise((resolve) => {
+        await new Promise((resolve) => {
           window.Telegram.WebApp.CloudStorage.setItem(key, stringValue, (err, stored) => {
-            if (err) {
-              console.warn('CloudStorage write error:', err);
-              resolve(false);
-            } else {
-              resolve(stored);
-            }
+            resolve(stored);
           });
         });
       } catch (e) {
-        console.warn('CloudStorage access failed:', e);
-        return false;
+        console.warn('CloudStorage write failed');
       }
     }
-    
     return true;
   }
 };

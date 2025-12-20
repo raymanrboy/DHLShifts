@@ -1,6 +1,8 @@
-export const RATES = {
-  DAY: 34.00,       // 06:00 - 00:00
-  NIGHT: 37.70,     // 00:00 - 06:00
+import { Rates } from './types';
+
+export const DEFAULT_RATES: Rates = {
+  day: 34.00,       // 06:00 - 00:00
+  night: 37.70,     // 00:00 - 06:00
 };
 
 export const DEFAULT_SHIFT = {

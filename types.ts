@@ -7,6 +7,11 @@ export interface ShiftData {
   isCompleted: boolean; // Has the user actually worked this shift?
 }
 
+export interface Rates {
+  day: number;
+  night: number;
+}
+
 export interface EarningsResult {
   dayHours: number;
   nightHours: number;
