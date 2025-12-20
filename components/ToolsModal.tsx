@@ -8,7 +8,6 @@ interface ToolsModalProps {
   onGenerate: (selectedDayIndices: number[]) => void;
   rates: Rates;
   onUpdateRates: (rates: Rates) => void;
-  tilt?: { x: number, y: number };
 }
 
 const ToolsModal: React.FC<ToolsModalProps> = ({ 
@@ -16,8 +15,7 @@ const ToolsModal: React.FC<ToolsModalProps> = ({
   onClose, 
   onGenerate, 
   rates, 
-  onUpdateRates, 
-  tilt = { x: 0, y: 0 } 
+  onUpdateRates
 }) => {
   const [activeTab, setActiveTab] = useState<'fill' | 'rates'>('fill');
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -59,7 +57,6 @@ const ToolsModal: React.FC<ToolsModalProps> = ({
       
       <div 
         className="pointer-events-auto relative bg-white dark:bg-[#1e1e1e] w-full md:w-[480px] rounded-t-[3rem] md:rounded-[3rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white dark:border-white/5 transition-all duration-300 overflow-hidden"
-        style={{ transform: `translate3d(${tilt.x * 8}px, ${tilt.y * 8}px, 0)` }}
       >
         <div className="md:hidden w-full flex justify-center pt-4" onClick={onClose}>
             <div className="w-16 h-1.5 bg-slate-200 dark:bg-gray-700 rounded-full"></div>

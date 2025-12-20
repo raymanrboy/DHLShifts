@@ -10,10 +10,9 @@ interface ShiftModalProps {
   onSave: (updatedShift: ShiftData) => void;
   onDelete: () => void;
   rates: Rates;
-  tilt?: { x: number, y: number };
 }
 
-const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave, onDelete, rates, tilt = { x: 0, y: 0 } }) => {
+const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave, onDelete, rates }) => {
   if (!isOpen) return null;
 
   const triggerHaptic = (type: 'soft' | 'medium' | 'selection' | 'success') => {
@@ -38,7 +37,6 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave,
       <div className="absolute inset-0 bg-[#F2F4F8]/80 dark:bg-black/80 backdrop-blur-sm pointer-events-auto transition-opacity" onClick={onClose}/>
       <div 
         className="pointer-events-auto relative bg-white dark:bg-[#1e1e1e] w-full md:w-[480px] rounded-t-[3rem] md:rounded-[3rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] dark:shadow-black/60 border border-white dark:border-white/5 transition-all duration-300 overflow-hidden"
-        style={{ transform: `translate3d(${tilt.x * 8}px, ${tilt.y * 8}px, 0)` }}
       >
         <div className="md:hidden w-full flex justify-center pt-4 pb-1"><div className="w-16 h-1.5 bg-slate-200 dark:bg-gray-700 rounded-full"></div></div>
         

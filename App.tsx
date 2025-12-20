@@ -31,8 +31,6 @@ const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | string>('guest');
-  
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' | 'success' | 'warning' | 'error' | 'selection') => {
     const tg = window.Telegram?.WebApp;
@@ -46,27 +44,6 @@ const App: React.FC = () => {
       console.warn('Haptic failed');
     }
   };
-
-  const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
-    const x = event.gamma ? Math.max(-15, Math.min(15, event.gamma)) / 15 : 0;
-    const y = event.beta ? Math.max(-15, Math.min(15, event.beta - 45)) / 15 : 0;
-    setTilt({ x, y });
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('deviceorientation', handleOrientation);
-    const initOrientation = () => {
-      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-        (DeviceOrientationEvent as any).requestPermission();
-      }
-      window.removeEventListener('click', initOrientation);
-    };
-    window.addEventListener('click', initOrientation);
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation);
-      window.removeEventListener('click', initOrientation);
-    };
-  }, [handleOrientation]);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -187,12 +164,11 @@ const App: React.FC = () => {
         </div>
       </header>
       <main className="max-w-5xl mx-auto px-4 py-4 space-y-8">
-        <div style={{ transform: `translate3d(${tilt.x * 4}px, ${tilt.y * 4}px, 0)`, transition: 'transform 0.1s ease-out' }}>
+        <div>
           <StatsPanel stats={currentMonthStats} />
         </div>
         <div 
           className="bg-white dark:bg-[#242424] rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-white/60 dark:border-white/5 overflow-hidden relative"
-          style={{ transform: `translate3d(${tilt.x * 2}px, ${tilt.y * 2}px, 0)`, transition: 'transform 0.1s ease-out' }}
         >
             <div className="grid grid-cols-7 pt-4 pb-2 border-b border-slate-100/50 dark:border-white/5">
                 {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map((day, i) => (
@@ -224,7 +200,7 @@ const App: React.FC = () => {
             </div>
         </div>
       </main>
-      <div className="fixed bottom-8 right-6 z-20" style={{ transform: `translate3d(${tilt.x * 12}px, ${tilt.y * 12}px, 0)`, transition: 'transform 0.1s ease-out' }}>
+      <div className="fixed bottom-8 right-6 z-20">
         <button onClick={() => { triggerHaptic('rigid'); setIsToolsModalOpen(true); }} className="w-16 h-16 rounded-[2rem] bg-[#222] dark:bg-[#D40511] text-white shadow-xl flex items-center justify-center active:scale-95 transition-all border-4 border-white/10 dark:border-white/5">
             <Wand2 size={24} />
         </button>
@@ -235,7 +211,6 @@ const App: React.FC = () => {
           isOpen={!!selectedDate} 
           onClose={() => setSelectedDate(null)} 
           shift={activeShift} 
-          tilt={tilt}
           onSave={(updated) => { 
             setShifts(prev => ({ ...prev, [updated.id]: { ...updated, isWorkDay: true } })); 
           }}
@@ -254,7 +229,7 @@ const App: React.FC = () => {
 
       <ToolsModal 
         isOpen={isToolsModalOpen} onClose={() => setIsToolsModalOpen(false)} 
-        tilt={tilt} rates={rates} onUpdateRates={setRates}
+        rates={rates} onUpdateRates={setRates}
         onGenerate={(days) => {
             const newShifts = { ...shifts };
             eachDayOfInterval({ start: startOfMonth(currentDate), end: endOfMonth(currentDate) }).forEach(day => {
