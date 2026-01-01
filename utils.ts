@@ -1,5 +1,5 @@
 import { TIME_ZONES } from './constants';
-import { EarningsResult, Rates } from './types';
+import { EarningsResult, Rates, ShiftData } from './types';
 
 /**
  * Parses "HH:mm" string to decimal hours (e.g., "02:30" -> 2.5)
@@ -89,6 +89,54 @@ export const calculateEarnings = (startStr: string, endStr: string, rates: Rates
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 }).format(amount);
+};
+
+// --- Storage Optimization (Compression) ---
+
+/**
+ * Compresses the Shifts object to a minimal string format to save storage space.
+ * Format: "YYYY-MM-DD": "Start|End|IsCompleted(0/1)"
+ */
+export const compressShifts = (shifts: Record<string, ShiftData>): Record<string, string> => {
+  const compressed: Record<string, string> = {};
+  Object.values(shifts).forEach(shift => {
+    // We only save actual work days to save space
+    if (shift.isWorkDay) {
+       compressed[shift.date] = `${shift.startTime}|${shift.endTime}|${shift.isCompleted ? 1 : 0}`;
+    }
+  });
+  return compressed;
+};
+
+/**
+ * Decompresses storage data back into full ShiftData objects.
+ * Handles both legacy (full JSON) and new (compressed string) formats.
+ */
+export const decompressShifts = (data: any): Record<string, ShiftData> => {
+   const shifts: Record<string, ShiftData> = {};
+   if (!data || typeof data !== 'object') return shifts;
+
+   Object.entries(data).forEach(([date, value]) => {
+      if (typeof value === 'object' && value !== null && 'id' in value) {
+         // Handle Legacy Format
+         shifts[date] = value as ShiftData;
+      } else if (typeof value === 'string') {
+         // Handle New Compressed Format "Start|End|Completed"
+         const parts = value.split('|');
+         if (parts.length >= 2) {
+             const [start, end, completed] = parts;
+             shifts[date] = {
+               id: date,
+               date: date,
+               isWorkDay: true,
+               startTime: start,
+               endTime: end,
+               isCompleted: completed === '1'
+             };
+         }
+      }
+   });
+   return shifts;
 };
 
 // --- Cloud Storage Helpers ---

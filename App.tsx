@@ -16,7 +16,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Wand2, Loader2 } f
 
 import { ShiftData, DayStats, Rates } from './types';
 import { DEFAULT_SHIFT, DEFAULT_RATES } from './constants';
-import { calculateEarnings, storage } from './utils';
+import { calculateEarnings, storage, compressShifts, decompressShifts } from './utils';
 import StatsPanel from './components/StatsPanel';
 import ShiftModal from './components/ShiftModal';
 import ToolsModal from './components/ToolsModal';
@@ -72,7 +72,11 @@ const App: React.FC = () => {
           storage.get(shiftsKey),
           storage.get(ratesKey)
         ]);
-        if (storedShifts) setShifts(storedShifts);
+        
+        // Decompress loaded data (handles legacy data automatically)
+        if (storedShifts) {
+            setShifts(decompressShifts(storedShifts));
+        }
         if (storedRates) setRates(storedRates);
       } catch (e) {
         console.error("Load failed");
@@ -86,7 +90,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isLoading) {
        const handler = setTimeout(() => {
-         storage.set(shiftsKey, shifts);
+         // Compress data before saving to fit more into CloudStorage
+         storage.set(shiftsKey, compressShifts(shifts));
          storage.set(ratesKey, rates);
        }, 500);
        return () => clearTimeout(handler);

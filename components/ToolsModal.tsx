@@ -79,48 +79,52 @@ const ToolsModal: React.FC<ToolsModalProps> = ({
             </div>
         </div>
 
-        <div className="px-8 pb-10 space-y-6">
-          {activeTab === 'fill' ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-4 gap-3">
-                 {DISPLAY_DAYS.map((day) => {
-                    const isSelected = selectedDays.includes(day.index);
-                    return (
-                        <button key={day.index} onClick={() => toggleDay(day.index)}
-                            className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all border-2 ${isSelected ? 'bg-[#D40511] border-[#D40511] text-white shadow-lg shadow-red-500/10' : 'bg-slate-50 dark:bg-[#2a2a2a] border-transparent text-slate-400'}`}
-                        >
-                            <span className="text-xl font-bold">{day.label}</span>
-                            {isSelected && <Check size={18} className="mt-1 opacity-60" />}
-                        </button>
-                    );
-                 })}
-              </div>
-              <button onClick={() => { onGenerate(selectedDays); onClose(); }} className="w-full h-16 rounded-2xl bg-[#D40511] text-white font-bold text-lg active:scale-95 transition-all shadow-lg shadow-red-500/20">Згенерувати місяць</button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {[
-                { label: 'Денна ставка', key: 'day' as const, icon: <Sun size={20} className="text-orange-400/80" /> },
-                { label: 'Нічна ставка', key: 'night' as const, icon: <Moon size={20} className="text-blue-400/80" /> }
-              ].map(item => (
-                <div key={item.key} className="bg-slate-50/50 dark:bg-[#1a1a1a] p-5 rounded-[2.5rem] border border-slate-100 dark:border-white/5">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 bg-white dark:bg-[#2d2d2d] rounded-xl shadow-sm">{item.icon}</div>
-                        <span className="font-bold text-slate-500 dark:text-gray-400 uppercase text-xs tracking-wider">{item.label}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                        <button onClick={() => handleRateChange(item.key, -0.1)} className="w-12 h-12 bg-white dark:bg-[#2d2d2d] rounded-2xl shadow-sm flex items-center justify-center active:scale-90 transition-transform border border-slate-50 dark:border-transparent"><Minus size={20} /></button>
-                        <div className="flex-1 text-center">
-                            <span className="text-3xl font-black text-[#1a1c24] dark:text-white">{rates[item.key].toFixed(2)}</span>
-                            <span className="ml-1 text-sm font-bold text-slate-400 uppercase">zl/год</span>
-                        </div>
-                        <button onClick={() => handleRateChange(item.key, 0.1)} className="w-12 h-12 bg-white dark:bg-[#2d2d2d] rounded-2xl shadow-sm flex items-center justify-center active:scale-90 transition-transform border border-slate-50 dark:border-transparent"><Plus size={20} /></button>
-                    </div>
+        <div className="px-8 pb-10">
+          <div className="h-[380px] transition-all duration-300 relative">
+            {activeTab === 'fill' ? (
+              <div className="h-full flex flex-col justify-between animate-in fade-in zoom-in-95 duration-200">
+                <div className="grid grid-cols-4 gap-3">
+                   {DISPLAY_DAYS.map((day) => {
+                      const isSelected = selectedDays.includes(day.index);
+                      return (
+                          <button key={day.index} onClick={() => toggleDay(day.index)}
+                              className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all border-2 ${isSelected ? 'bg-[#D40511] border-[#D40511] text-white shadow-lg shadow-red-500/10' : 'bg-slate-50 dark:bg-[#2a2a2a] border-transparent text-slate-400'}`}
+                          >
+                              <span className="text-xl font-bold">{day.label}</span>
+                              {isSelected && <Check size={18} className="mt-1 opacity-60" />}
+                          </button>
+                      );
+                   })}
                 </div>
-              ))}
-              <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 pt-2">Всі розрахунки оновлюються автоматично</p>
-            </div>
-          )}
+                <button onClick={() => { onGenerate(selectedDays); onClose(); }} className="w-full h-16 rounded-2xl bg-[#D40511] text-white font-bold text-lg active:scale-95 transition-all shadow-lg shadow-red-500/20">Згенерувати місяць</button>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col justify-between animate-in fade-in zoom-in-95 duration-200">
+                <div className="space-y-4">
+                  {[
+                    { label: 'Денна ставка', key: 'day' as const, icon: <Sun size={20} className="text-orange-400/80" /> },
+                    { label: 'Нічна ставка', key: 'night' as const, icon: <Moon size={20} className="text-blue-400/80" /> }
+                  ].map(item => (
+                    <div key={item.key} className="bg-slate-50/50 dark:bg-[#1a1a1a] p-5 rounded-[2.5rem] border border-slate-100 dark:border-white/5">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2.5 bg-white dark:bg-[#2d2d2d] rounded-xl shadow-sm">{item.icon}</div>
+                            <span className="font-bold text-slate-500 dark:text-gray-400 uppercase text-xs tracking-wider">{item.label}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                            <button onClick={() => handleRateChange(item.key, -0.1)} className="w-12 h-12 bg-white dark:bg-[#2d2d2d] rounded-2xl shadow-sm flex items-center justify-center active:scale-90 transition-transform border border-slate-50 dark:border-transparent"><Minus size={20} /></button>
+                            <div className="flex-1 text-center">
+                                <span className="text-3xl font-black text-[#1a1c24] dark:text-white">{rates[item.key].toFixed(2)}</span>
+                                <span className="ml-1 text-sm font-bold text-slate-400 uppercase">zl/год</span>
+                            </div>
+                            <button onClick={() => handleRateChange(item.key, 0.1)} className="w-12 h-12 bg-white dark:bg-[#2d2d2d] rounded-2xl shadow-sm flex items-center justify-center active:scale-90 transition-transform border border-slate-50 dark:border-transparent"><Plus size={20} /></button>
+                        </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 pt-2">Всі розрахунки оновлюються автоматично</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
