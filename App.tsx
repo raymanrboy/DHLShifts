@@ -51,6 +51,10 @@ const App: React.FC = () => {
     if (!tg) return;
     tg.ready();
     tg.expand();
+    try {
+      if (tg.setHeaderColor) tg.setHeaderColor('#FFCC00');
+      if (tg.setBackgroundColor) tg.setBackgroundColor('#FFCC00');
+    } catch (e) {}
     if (tg.isVersionAtLeast?.('6.2')) tg.enableClosingConfirmation();
     if (tg.initDataUnsafe?.user?.id) setUserId(tg.initDataUnsafe.user.id);
   }, []);
@@ -117,8 +121,13 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-[#FFCC00] text-black pb-32 overflow-x-hidden font-sans">
       
       {/* Top Logo */}
-      <div className="flex justify-start px-6 pt-2 pb-0">
-         <img src="/logo.png" alt="DHL Logo" className="h-40 w-auto object-contain" />
+      <div 
+        className="flex justify-center w-full px-6 pb-2 pointer-events-none"
+        style={{ 
+          paddingTop: 'calc(var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 24px))) + 52px)' 
+        }}
+      >
+         <img src="/logo.png" alt="DHL Logo" className="h-24 sm:h-28 w-auto object-contain drop-shadow-sm" />
       </div>
 
       <main className="max-w-xl mx-auto px-2 space-y-6">
