@@ -47,12 +47,23 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
         </div>
       </div>
 
-      {/* Horizontally Scrollable Pills */}
-      <div className="w-full overflow-x-auto no-scrollbar snap-x snap-mandatory flex gap-4 pl-6 pr-6 py-4 min-h-[120px]" style={{ scrollPaddingLeft: '24px', scrollPaddingRight: '24px' }}>
+      {/* Horizontally Scrollable Pills — breaks out to full viewport width */}
+      <div 
+        className="overflow-x-auto no-scrollbar snap-x snap-mandatory flex gap-4 py-4 min-h-[120px]"
+        style={{ 
+          width: '100vw', 
+          marginLeft: 'calc(-50vw + 50%)',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          scrollPaddingLeft: '16px', 
+          scrollPaddingRight: '16px' 
+        }}
+      >
         {cards.map((card) => (
           <div 
             key={card.id} 
-            className="snap-center shrink-0 w-[92%] h-24 relative"
+            className="snap-center shrink-0 h-24 relative"
+            style={{ width: 'calc(100vw - 48px)' }}
           >
              <div
                onClick={() => toggleFlip(card.id)}
