@@ -52,7 +52,7 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
         {cards.map((card) => (
           <div 
             key={card.id} 
-            className="snap-center shrink-0 w-[85%] h-24 relative"
+            className="snap-center shrink-0 w-[92%] h-24 relative"
           >
              <div
                onClick={() => toggleFlip(card.id)}

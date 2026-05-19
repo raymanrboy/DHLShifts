@@ -54,11 +54,6 @@ const App: React.FC = () => {
     try {
       if (tg.setHeaderColor) tg.setHeaderColor('#FFCC00');
       if (tg.setBackgroundColor) tg.setBackgroundColor('#FFCC00');
-      if ((tg as any).setBottomBarColor) (tg as any).setBottomBarColor('#FFCC00');
-    } catch (e) {}
-    // Request fullscreen to remove native Telegram padding (Bot API 8.0+)
-    try {
-      if ((tg as any).requestFullscreen) (tg as any).requestFullscreen();
     } catch (e) {}
     if (tg.isVersionAtLeast?.('6.2')) tg.enableClosingConfirmation();
     if (tg.initDataUnsafe?.user?.id) setUserId(tg.initDataUnsafe.user.id);
@@ -123,7 +118,7 @@ const App: React.FC = () => {
   if (isLoading) return <div className="min-h-screen bg-[#FFCC00] flex items-center justify-center"><Loader2 className="animate-spin text-[#D40511] w-10 h-10" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#FFCC00] text-black pb-32 font-sans">
+    <div className="min-h-screen bg-[#FFCC00] text-black pb-32 overflow-x-hidden font-sans">
       
       {/* Top Logo */}
       <div 
@@ -135,7 +130,7 @@ const App: React.FC = () => {
          <img src="/logo.png" alt="DHL Logo" className="h-28 sm:h-32 w-auto object-contain drop-shadow-sm" />
       </div>
 
-      <main className="w-full px-2 space-y-6">
+      <main className="max-w-xl mx-auto px-2 space-y-6">
         
         {/* Profile Badge (Hero + 3 Pills) */}
         <ProfileBadge credentials={ROMAN_CREDENTIALS} />
