@@ -136,7 +136,7 @@ const App: React.FC = () => {
         <ProfileBadge credentials={ROMAN_CREDENTIALS} />
 
         {/* Calendar Section */}
-        <section className="bg-white rounded-[2.5rem] shadow-2xl p-4 mx-4">
+        <section className="bg-white rounded-[2.5rem] shadow-2xl p-4 mx-2">
             <div className="flex items-center justify-between px-4 mb-4">
                 <button onClick={() => { triggerHaptic('light'); setCurrentDate(subMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronLeft size={20} /></button>
                 <div className="flex flex-col items-center">
