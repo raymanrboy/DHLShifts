@@ -118,7 +118,7 @@ const App: React.FC = () => {
   if (isLoading) return <div className="min-h-screen bg-[#FFCC00] flex items-center justify-center"><Loader2 className="animate-spin text-[#D40511] w-10 h-10" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#FFCC00] text-black pb-32 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#FFCC00] text-black pb-32 font-sans">
       
       {/* Top Logo */}
       <div 
@@ -130,13 +130,13 @@ const App: React.FC = () => {
          <img src="/logo.png" alt="DHL Logo" className="h-28 sm:h-32 w-auto object-contain drop-shadow-sm" />
       </div>
 
-      <main className="max-w-xl mx-auto px-2 space-y-6">
+      <main className="w-full px-2 space-y-6">
         
         {/* Profile Badge (Hero + 3 Pills) */}
         <ProfileBadge credentials={ROMAN_CREDENTIALS} />
 
         {/* Calendar Section */}
-        <section className="bg-white rounded-[2.5rem] shadow-2xl p-4 mx-2">
+        <section className="bg-white rounded-[2.5rem] shadow-2xl p-4 mx-4">
             <div className="flex items-center justify-between px-4 mb-4">
                 <button onClick={() => { triggerHaptic('light'); setCurrentDate(subMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronLeft size={20} /></button>
                 <div className="flex flex-col items-center">
