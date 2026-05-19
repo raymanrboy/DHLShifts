@@ -48,11 +48,11 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
       </div>
 
       {/* Horizontally Scrollable Pills */}
-      <div className="w-full overflow-x-auto no-scrollbar snap-x snap-mandatory flex gap-4 px-6 py-4 min-h-[120px]">
+      <div className="w-full overflow-x-auto no-scrollbar snap-x snap-mandatory flex gap-4 pl-6 pr-6 py-4 min-h-[120px]" style={{ scrollPaddingLeft: '24px', scrollPaddingRight: '24px' }}>
         {cards.map((card) => (
           <div 
             key={card.id} 
-            className="snap-center shrink-0 w-[92%] h-24 relative"
+            className="snap-center shrink-0 w-[85%] h-24 relative"
           >
              <div
                onClick={() => toggleFlip(card.id)}
@@ -89,6 +89,8 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
              </div>
           </div>
         ))}
+        {/* Spacer to prevent last pill from being clipped */}
+        <div className="shrink-0 w-1" aria-hidden="true" />
       </div>
 
       {/* Full-screen barcode overlay — blur layer is always mounted for instant GPU compositing */}
