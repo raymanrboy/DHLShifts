@@ -1,8 +1,10 @@
 export interface ShiftData {
   date: string;        // "YYYY-MM-DD" — also used as key
   isWorkDay: boolean;
-  startTime: string;   // Format "HH:mm"
-  endTime: string;     // Format "HH:mm"
+  startTime: string;   // Planned start "HH:mm"
+  endTime: string;     // Planned end "HH:mm"
+  actualStartTime?: string; // Actual start (only if different from plan)
+  actualEndTime?: string;   // Actual end (only if different from plan)
   isCompleted: boolean;
 }
 

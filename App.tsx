@@ -11,7 +11,7 @@ import {
   endOfWeek,
 } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Wand2, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, ClipboardList, CheckCircle2 } from 'lucide-react';
 
 import { ShiftData, UserProfile } from './types';
 import { DEFAULT_SHIFT } from './constants';
@@ -19,13 +19,15 @@ import { storage, compressShifts, decompressShifts, haptic } from './utils';
 import ProfileBadge from './components/ProfileBadge';
 import ProfileSetup from './components/ProfileSetup';
 import ShiftModal from './components/ShiftModal';
-import ToolsModal from './components/ToolsModal';
+import CalendarGrid from './components/CalendarGrid';
+import PlannerActions from './components/PlannerActions';
+import HoursSummary from './components/HoursSummary';
 
 const App: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<Record<string, ShiftData>>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [isToolsModalOpen, setIsToolsModalOpen] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<'planner' | 'fact'>('fact');
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | string>('guest');
   const [tgAvatarUrl, setTgAvatarUrl] = useState<string | null>(null);
@@ -115,20 +117,48 @@ const App: React.FC = () => {
 
   const activeShift = useMemo(() => {
     if (!selectedDate) return null;
-    const dateObj = new Date(selectedDate);
-    const isMonday = dateObj.getDay() === 1;
     return shifts[selectedDate] || {
       date: selectedDate,
       isWorkDay: false,
-      startTime: isMonday ? "03:00" : DEFAULT_SHIFT.START,
-      endTime: isMonday ? "11:00" : DEFAULT_SHIFT.END,
+      startTime: DEFAULT_SHIFT.START,
+      endTime: DEFAULT_SHIFT.END,
       isCompleted: false
     };
   }, [selectedDate, shifts]);
 
   const handleDayClick = (date: Date) => {
-    haptic.selection();
     setSelectedDate(format(date, 'yyyy-MM-dd'));
+  };
+
+  const handleGenerateMonth = (days: number[], startTime: string, endTime: string) => {
+    const newShifts = { ...shifts };
+    eachDayOfInterval({ start: startOfMonth(currentDate), end: endOfMonth(currentDate) }).forEach(day => {
+        const dayOfWeek = day.getDay();
+        const key = format(day, 'yyyy-MM-dd');
+        if (days.includes(dayOfWeek) && !newShifts[key]?.isWorkDay) {
+            newShifts[key] = { 
+              date: key, 
+              isWorkDay: true, 
+              startTime: dayOfWeek === 1 ? "03:00" : startTime, 
+              endTime: dayOfWeek === 1 ? "11:00" : endTime, 
+              isCompleted: false 
+            };
+        }
+    });
+    setShifts(newShifts);
+  };
+
+  const handleClearMonth = () => {
+    const newShifts = { ...shifts };
+    const month = currentDate.getMonth();
+    const year = currentDate.getFullYear();
+    Object.keys(newShifts).forEach(key => {
+       const d = new Date(key);
+       if (d.getMonth() === month && d.getFullYear() === year) {
+         delete newShifts[key];
+       }
+    });
+    setShifts(newShifts);
   };
 
   // --- Loading ---
@@ -187,64 +217,53 @@ const App: React.FC = () => {
                 <button onClick={() => { haptic.impact('light'); setCurrentDate(addMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronRight size={20} /></button>
             </div>
 
+            {/* Mode Switcher */}
+            <div className="flex bg-slate-50 rounded-2xl p-1 mb-4 shadow-inner">
+               <button 
+                 onClick={() => { haptic.selection(); setCalendarMode('planner'); }}
+                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${calendarMode === 'planner' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+               >
+                 <ClipboardList size={16} className={calendarMode === 'planner' ? 'text-[#D40511]' : ''} />
+                 Планувальник
+               </button>
+               <button 
+                 onClick={() => { haptic.selection(); setCalendarMode('fact'); }}
+                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${calendarMode === 'fact' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+               >
+                 <CheckCircle2 size={16} className={calendarMode === 'fact' ? 'text-[#FFCC00]' : ''} />
+                 Графік
+               </button>
+            </div>
+
             <div className="grid grid-cols-7 pb-2 mb-2 border-b border-slate-100">
                 {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map((day, i) => (
                     <div key={day} className={`text-center text-[11px] font-black uppercase tracking-widest ${i >= 5 ? 'text-[#D40511]' : 'text-slate-400'}`}>{day}</div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-y-2">
-                {calendarDays.map((day, index) => {
-                    const dateKey = calendarKeys[index];
-                    const shift = shifts[dateKey];
-                    const isCurrentMonth = isSameMonth(day, currentDate);
-
-                    const prevKey = calendarKeys[index - 1] ?? null;
-                    const nextKey = calendarKeys[index + 1] ?? null;
-                    const isPrev = shift?.isWorkDay && prevKey && shifts[prevKey]?.isWorkDay;
-                    const isNext = shift?.isWorkDay && nextKey && shifts[nextKey]?.isWorkDay;
-
-                    return (
-                        <div
-                            key={day.toString()}
-                            onClick={() => handleDayClick(day)}
-                            className={`relative h-[65px] flex flex-col items-center justify-center transition-colors cursor-pointer ${!isCurrentMonth ? 'opacity-20' : ''}`}
-                        >
-                            {shift?.isWorkDay && isPrev && <div className="absolute -left-1 top-1/2 w-[55%] h-1 bg-[#D40511] -translate-y-1/2 z-0" />}
-                            {shift?.isWorkDay && isNext && <div className="absolute -right-1 top-1/2 w-[55%] h-1 bg-[#D40511] -translate-y-1/2 z-0" />}
-
-                            <div className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm ${
-                              shift?.isWorkDay
-                                ? (shift.isCompleted ? 'bg-[#FFCC00] text-[#D40511] border-2 border-[#D40511]' : 'bg-[#D40511] text-white border-2 border-white')
-                                : 'bg-white text-slate-600 border border-slate-100'
-                            }`}>
-                                {format(day, 'd')}
-                            </div>
-
-                            {shift?.isWorkDay && (
-                                <div className="relative z-10 mt-1 flex items-center gap-1">
-                                    <span className="text-[9px] font-black text-slate-800">{shift.startTime}</span>
-                                    {!shift.isCompleted && <div className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse" />}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
+            <CalendarGrid 
+               mode={calendarMode}
+               currentDate={currentDate}
+               calendarDays={calendarDays}
+               calendarKeys={calendarKeys}
+               shifts={shifts}
+               onDayClick={handleDayClick}
+            />
         </section>
-      </main>
 
-      {/* Tools Button */}
-      <div className="fixed bottom-8 right-6 z-20">
-        <button onClick={() => { haptic.impact('rigid'); setIsToolsModalOpen(true); }} className="w-14 h-14 rounded-full bg-black text-white shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#FFCC00]">
-            <Wand2 size={20} />
-        </button>
-      </div>
+        {calendarMode === 'planner' && (
+          <PlannerActions onGenerate={handleGenerateMonth} onClear={handleClearMonth} />
+        )}
+
+        <HoursSummary shifts={shifts} currentDate={currentDate} />
+
+      </main>
 
       <ShiftModal
         isOpen={!!selectedDate && !!activeShift}
         onClose={() => setSelectedDate(null)}
         shift={activeShift || { date: '', isWorkDay: false, startTime: '06:00', endTime: '14:00', isCompleted: false }}
+        mode={calendarMode}
         onSave={(updated) => {
           setShifts(prev => ({ ...prev, [updated.date]: { ...updated, isWorkDay: true } }));
         }}
@@ -259,21 +278,6 @@ const App: React.FC = () => {
         }}
       />
 
-      <ToolsModal
-        isOpen={isToolsModalOpen} onClose={() => setIsToolsModalOpen(false)}
-        onGenerate={(days) => {
-            const newShifts = { ...shifts };
-            eachDayOfInterval({ start: startOfMonth(currentDate), end: endOfMonth(currentDate) }).forEach(day => {
-                const dayOfWeek = day.getDay();
-                const key = format(day, 'yyyy-MM-dd');
-                if (days.includes(dayOfWeek) && !newShifts[key]?.isWorkDay) {
-                    newShifts[key] = { date: key, isWorkDay: true, startTime: dayOfWeek === 1 ? "03:00" : DEFAULT_SHIFT.START, endTime: dayOfWeek === 1 ? "11:00" : DEFAULT_SHIFT.END, isCompleted: false };
-                }
-            });
-            setShifts(newShifts);
-            haptic.notification('success');
-        }}
-      />
     </div>
   );
 };

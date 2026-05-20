@@ -58,7 +58,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
     <div 
       className="min-h-screen bg-[#FFCC00] text-black pb-16 overflow-x-hidden font-sans"
       style={{
-        paddingTop: 'calc(var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 24px))) + 16px)'
+        paddingTop: 'calc(var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 24px))) + 64px)'
       }}
     >
       <div className="max-w-md mx-auto px-6">

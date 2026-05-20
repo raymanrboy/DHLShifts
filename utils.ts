@@ -25,13 +25,57 @@ export const haptic = {
   },
 };
 
+// --- Hours Calculation ---
+
+export const calcHours = (startTime: string, endTime: string): number => {
+  if (!startTime || !endTime) return 0;
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  
+  let hours = endH - startH + (endM - startM) / 60;
+  if (hours < 0) hours += 24; // Handle night shifts (e.g. 22:00 -> 06:00)
+  return hours;
+};
+
+export const calcMonthStats = (shifts: Record<string, ShiftData>, monthDate: Date): { planned: number; actual: number; balance: number } => {
+  let planned = 0;
+  let actual = 0;
+  
+  const targetMonth = monthDate.getMonth();
+  const targetYear = monthDate.getFullYear();
+
+  Object.values(shifts).forEach(shift => {
+    if (!shift.isWorkDay) return;
+    
+    const shiftDate = new Date(shift.date);
+    if (shiftDate.getMonth() !== targetMonth || shiftDate.getFullYear() !== targetYear) return;
+
+    const planHours = calcHours(shift.startTime, shift.endTime);
+    planned += planHours;
+    
+    if (shift.isCompleted) {
+      const actStart = shift.actualStartTime || shift.startTime;
+      const actEnd = shift.actualEndTime || shift.endTime;
+      actual += calcHours(actStart, actEnd);
+    } else {
+      actual += planHours;
+    }
+  });
+
+  return { planned, actual, balance: actual - planned };
+};
+
 // --- Storage Optimization (Compression) ---
 
 export const compressShifts = (shifts: Record<string, ShiftData>): Record<string, string> => {
   const compressed: Record<string, string> = {};
   Object.values(shifts).forEach(shift => {
     if (shift.isWorkDay) {
-       compressed[shift.date] = `${shift.startTime}|${shift.endTime}|${shift.isCompleted ? 1 : 0}`;
+       let val = `${shift.startTime}|${shift.endTime}|${shift.isCompleted ? 1 : 0}`;
+       if (shift.actualStartTime || shift.actualEndTime) {
+         val += `|${shift.actualStartTime || shift.startTime}|${shift.actualEndTime || shift.endTime}`;
+       }
+       compressed[shift.date] = val;
     }
   });
   return compressed;
@@ -50,18 +94,22 @@ export const decompressShifts = (data: any): Record<string, ShiftData> => {
            isWorkDay: legacy.isWorkDay ?? true,
            startTime: legacy.startTime,
            endTime: legacy.endTime,
+           actualStartTime: legacy.actualStartTime,
+           actualEndTime: legacy.actualEndTime,
            isCompleted: legacy.isCompleted ?? false,
          };
       } else if (typeof value === 'string') {
-         // Handle Compressed Format "Start|End|Completed"
+         // Handle Compressed Format "Start|End|Completed" or "Start|End|Completed|ActualStart|ActualEnd"
          const parts = value.split('|');
-         if (parts.length >= 2) {
-             const [start, end, completed] = parts;
+         if (parts.length >= 3) {
+             const [start, end, completed, actStart, actEnd] = parts;
              shifts[date] = {
                date: date,
                isWorkDay: true,
                startTime: start,
                endTime: end,
+               actualStartTime: actStart,
+               actualEndTime: actEnd,
                isCompleted: completed === '1'
              };
          }
