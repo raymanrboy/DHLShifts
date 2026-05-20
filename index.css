@@ -1,4 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-tg-bg: var(--tg-theme-bg-color, #F2F4F8);
+  --color-tg-secondary: var(--tg-theme-secondary-bg-color, #ffffff);
+  --color-tg-text: var(--tg-theme-text-color, #1f2937);
+  --color-tg-hint: var(--tg-theme-hint-color, #9ca3af);
+  --color-tg-button: var(--tg-theme-button-color, #D40511);
+  --color-tg-buttonText: var(--tg-theme-button-text-color, #ffffff);
+}
+
+:root {
+  --dhl-yellow: #FFCC00;
+}
 
 body {
   margin: 0;

@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { ShiftData } from './types';
 
 /**
@@ -41,14 +42,12 @@ export const calcMonthStats = (shifts: Record<string, ShiftData>, monthDate: Dat
   let planned = 0;
   let actual = 0;
   
-  const targetMonth = monthDate.getMonth();
-  const targetYear = monthDate.getFullYear();
+  const targetPrefix = format(monthDate, 'yyyy-MM');
 
   Object.values(shifts).forEach(shift => {
     if (!shift.isWorkDay) return;
     
-    const shiftDate = new Date(shift.date);
-    if (shiftDate.getMonth() !== targetMonth || shiftDate.getFullYear() !== targetYear) return;
+    if (!shift.date.startsWith(targetPrefix)) return;
 
     const planHours = calcHours(shift.startTime, shift.endTime);
     planned += planHours;
@@ -178,6 +177,9 @@ export const storage = {
   },
 
   set: async (key: string, value: any): Promise<boolean> => {
+    // SECURITY DISCLAIMER: Passwords and PII inside UserProfile are serialized as plaintext.
+    // In a production environment with strict security requirements, sensitive fields should be 
+    // encrypted (e.g. using AES) before being stored in localStorage / Telegram CloudStorage.
     const stringValue = JSON.stringify(value);
     localStorage.setItem(key, stringValue);
     if (isCloudStorageSupported()) {

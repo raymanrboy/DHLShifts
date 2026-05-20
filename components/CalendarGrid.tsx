@@ -48,7 +48,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ mode, currentDate, calendar
                   {shift?.isWorkDay && (
                       <div className="relative z-10 mt-1 flex items-center gap-1">
                           <span className="text-[9px] font-black text-slate-800">{displayStart}</span>
-                          {!isFact && <div className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse" />}
                       </div>
                   )}
               </div>

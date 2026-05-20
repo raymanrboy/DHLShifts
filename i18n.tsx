@@ -8,7 +8,7 @@ export const locales = {
   UA: uk,
 };
 
-const translations = {
+export const translations = {
   EN: {
     editProfile: 'Edit Profile',
     setupProfile: 'Setup Profile',
@@ -103,12 +103,18 @@ const LanguageContext = createContext<LanguageContextType>({
 export const useTranslation = () => useContext(LanguageContext);
 
 export const LanguageProvider: React.FC<{ language: Language; children: React.ReactNode }> = ({ language, children }) => {
-  const t = (key: keyof Translations) => {
+  const t = React.useCallback((key: keyof Translations) => {
     return translations[language][key];
-  };
+  }, [language]);
+
+  const value = React.useMemo(() => ({
+    language,
+    t,
+    locale: locales[language]
+  }), [language, t]);
 
   return (
-    <LanguageContext.Provider value={{ language, t, locale: locales[language] }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

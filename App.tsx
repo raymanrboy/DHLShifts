@@ -4,7 +4,6 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameMonth,
   addMonths,
   subMonths,
   startOfWeek,
@@ -36,6 +35,10 @@ const InnerApp: React.FC<{
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarMode, setCalendarMode] = useState<'planner' | 'fact'>('fact');
+
+  useEffect(() => {
+    document.documentElement.lang = locale.code || 'en';
+  }, [locale]);
 
   // --- Calendar ---
   const calendarDays = useMemo(() => {
@@ -81,11 +84,9 @@ const InnerApp: React.FC<{
 
   const handleClearMonth = () => {
     const newShifts = { ...shifts };
-    const month = currentDate.getMonth();
-    const year = currentDate.getFullYear();
+    const monthPrefix = format(currentDate, 'yyyy-MM');
     Object.keys(newShifts).forEach(key => {
-       const d = new Date(key);
-       if (d.getMonth() === month && d.getFullYear() === year) {
+       if (key.startsWith(monthPrefix)) {
          delete newShifts[key];
        }
     });
@@ -102,7 +103,7 @@ const InnerApp: React.FC<{
           paddingTop: 'calc(var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 24px))) + 52px)'
         }}
       >
-         <img src="/logo.png" alt="DHL Logo" className="h-[134px] sm:h-[154px] w-auto object-contain drop-shadow-sm" />
+         <img src="/logo.webp" alt="DHL Logo" className="h-[134px] sm:h-[154px] w-auto object-contain drop-shadow-sm" />
       </div>
 
       <main className="max-w-xl mx-auto px-2 space-y-6">
@@ -168,7 +169,7 @@ const InnerApp: React.FC<{
       <ShiftModal
         isOpen={!!selectedDate && !!activeShift}
         onClose={() => setSelectedDate(null)}
-        shift={activeShift || { date: '', isWorkDay: false, startTime: '06:00', endTime: '14:00', isCompleted: false }}
+        shift={activeShift || { date: '', isWorkDay: false, startTime: DEFAULT_SHIFT.START, endTime: DEFAULT_SHIFT.END, isCompleted: false }}
         mode={calendarMode}
         onSave={(updated) => {
           setShifts(prev => ({ ...prev, [updated.date]: { ...updated, isWorkDay: true } }));

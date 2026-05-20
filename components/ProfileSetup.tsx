@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Camera, Mail, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { UserProfile, Language } from '../types';
 import { resizePhoto, haptic } from '../utils';
-import { useTranslation } from '../i18n';
+import { useTranslation, translations, Translations } from '../i18n';
 
 interface ProfileSetupProps {
   initialProfile: UserProfile | null;
@@ -19,12 +19,15 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
   onSave,
   onCancel,
 }) => {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
+  const [selectedLang, setSelectedLang] = useState<Language>(initialProfile?.language || 'EN');
+  
+  const t = (key: keyof Translations) => translations[selectedLang][key];
+  
   const [email, setEmail] = useState(initialProfile?.email || '');
   const [login, setLogin] = useState(initialProfile?.login || '');
   const [password, setPassword] = useState(initialProfile?.password || '');
   const [photo, setPhoto] = useState<string | null>(initialPhoto || null);
-  const [selectedLang, setSelectedLang] = useState<Language>(initialProfile?.language || 'EN');
   const [showPassword, setShowPassword] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);

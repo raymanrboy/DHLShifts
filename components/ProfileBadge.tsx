@@ -32,11 +32,11 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ profile, photoUrl, onEditPr
     haptic.impact('medium');
   };
 
-  const cards = useMemo(() => [
+  const cards = [
     { id: 'email', label: `${t('workEmailLabel')} @dhl.com`, value: profile.email.split('@')[0], barcodeValue: profile.email.toLowerCase(), icon: <Mail size={20} /> },
     { id: 'login', label: t('loginLabel'), value: profile.login, icon: <User size={20} /> },
-    { id: 'password', label: t('passwordLabel'), value: profile.password || '******', icon: <Lock size={20} /> },
-  ], [profile, t]);
+    ...(profile.password ? [{ id: 'password', label: t('passwordLabel'), value: profile.password, icon: <Lock size={20} /> }] : [])
+  ];
 
   const activeCard = cards.find(c => c.id === activeCardId);
 
