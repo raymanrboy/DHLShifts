@@ -11,6 +11,24 @@ export const adjustTime = (timeStr: string, deltaHours: number): string => {
   return `${newHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
+// --- Haptic Feedback ---
+
+/**
+ * Shared haptic feedback utilities.
+ * Single source of truth for all Telegram haptic interactions.
+ */
+export const haptic = {
+  impact: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => {
+    try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(style); } catch {}
+  },
+  notification: (type: 'success' | 'warning' | 'error') => {
+    try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type); } catch {}
+  },
+  selection: () => {
+    try { window.Telegram?.WebApp?.HapticFeedback?.selectionChanged(); } catch {}
+  },
+};
+
 // --- Storage Optimization (Compression) ---
 
 /**

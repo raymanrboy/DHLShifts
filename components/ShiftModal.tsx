@@ -1,7 +1,9 @@
 import React from 'react';
 import { X, Calendar as CalendarIcon, Minus, Plus, Trash2, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
 import { ShiftData } from '../types';
-import { adjustTime } from '../utils';
+import { adjustTime, haptic } from '../utils';
 
 interface ShiftModalProps {
   isOpen: boolean;
@@ -13,26 +15,24 @@ interface ShiftModalProps {
 
 const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave, onDelete }) => {
 
-  const triggerHaptic = (type: 'soft' | 'medium' | 'selection' | 'success') => {
-    const tg = window.Telegram?.WebApp;
-    if (tg?.HapticFeedback) {
-      if (type === 'selection') tg.HapticFeedback.selectionChanged();
-      else if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
-      else tg.HapticFeedback.impactOccurred(type as any);
-    }
-  };
-
   const handleSaveAndClose = () => {
-    triggerHaptic('success');
+    haptic.notification('success');
     onSave(shift);
     onClose();
   };
 
+  // Format date for display: "20 травня 2026" instead of raw "2026-05-20"
+  const formattedDate = shift.date 
+    ? format(new Date(shift.date), 'd MMMM yyyy', { locale: uk }) 
+    : shift.date;
+
+  if (!isOpen) return null;
+
   return (
-    <div className={`fixed inset-0 z-50 flex items-end md:items-center justify-center transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-      <div className="absolute inset-0 bg-[#F2F4F8]/80 dark:bg-black/80 backdrop-blur-sm" onClick={onClose} style={{ willChange: 'opacity' }} />
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center transition-opacity duration-300 opacity-100">
+      <div className="absolute inset-0 bg-[#F2F4F8]/80 dark:bg-black/80 backdrop-blur-sm" onClick={onClose} />
       <div 
-        className={`relative bg-white dark:bg-[#1e1e1e] w-full md:w-[480px] rounded-t-[3rem] md:rounded-[3rem] shadow-2xl border border-white dark:border-white/5 overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+        className="relative bg-white dark:bg-[#1e1e1e] w-full md:w-[480px] rounded-t-[3rem] md:rounded-[3rem] shadow-2xl border border-white dark:border-white/5 overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform translate-y-0"
       >
         <div className="md:hidden w-full flex justify-center pt-4 pb-1"><div className="w-16 h-1.5 bg-slate-200 dark:bg-gray-700 rounded-full"></div></div>
         
@@ -41,7 +41,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave,
             <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">{shift.isWorkDay ? 'Зміна' : 'Нова зміна'}</h2>
             <div className="flex items-center gap-2 mt-1 text-slate-400 font-bold uppercase text-[10px] tracking-widest">
               <CalendarIcon size={14} className="opacity-60 text-[#D40511]" />
-              <span>{shift.date}</span>
+              <span>{formattedDate}</span>
             </div>
           </div>
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-[#2d2d2d] text-slate-400 hover:text-slate-600 transition-colors">
@@ -55,7 +55,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave,
                   <div className={`w-3 h-3 rounded-full ${shift.isCompleted ? 'bg-[#D40511]' : 'bg-slate-300'}`} />
                   <span className="font-black text-slate-700 dark:text-gray-300 uppercase text-xs tracking-wider">Відпрацьовано</span>
               </div>
-              <button onClick={() => { triggerHaptic('medium'); onSave({ ...shift, isCompleted: !shift.isCompleted }); }} className={`w-14 h-8 rounded-full relative transition-all duration-300 ${shift.isCompleted ? 'bg-[#D40511]' : 'bg-slate-200 dark:bg-[#333]'}`}>
+              <button onClick={() => { haptic.impact('medium'); onSave({ ...shift, isCompleted: !shift.isCompleted }); }} className={`w-14 h-8 rounded-full relative transition-all duration-300 ${shift.isCompleted ? 'bg-[#D40511]' : 'bg-slate-200 dark:bg-[#333]'}`}>
                   <div className={`absolute top-1 bottom-1 left-1 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ${shift.isCompleted ? 'translate-x-6' : 'translate-x-0'}`} />
               </button>
           </div>
@@ -72,7 +72,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave,
                     </div>
                     <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#1a1a1a] p-1.5 rounded-2xl border border-slate-100 dark:border-white/5 shadow-inner">
                          <button 
-                           onClick={() => { triggerHaptic('soft'); onSave({ ...shift, [item.field]: adjustTime(shift[item.field as 'startTime'|'endTime'], -1) }); }} 
+                           onClick={() => { haptic.impact('soft'); onSave({ ...shift, [item.field]: adjustTime(shift[item.field as 'startTime'|'endTime'], -1) }); }} 
                            className="w-10 h-10 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-gray-300 active:scale-90 transition-transform"
                          >
                             <Minus size={18} />
@@ -85,7 +85,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, onSave,
                            className="bg-transparent font-black text-xl text-slate-800 dark:text-white text-center w-32 outline-none"
                          />
                          <button 
-                           onClick={() => { triggerHaptic('soft'); onSave({ ...shift, [item.field]: adjustTime(shift[item.field as 'startTime'|'endTime'], 1) }); }} 
+                           onClick={() => { haptic.impact('soft'); onSave({ ...shift, [item.field]: adjustTime(shift[item.field as 'startTime'|'endTime'], 1) }); }} 
                            className="w-10 h-10 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-gray-300 active:scale-90 transition-transform"
                          >
                             <Plus size={18} />

@@ -55,6 +55,8 @@ export interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   close: () => void;
+  setHeaderColor: (color: string) => void;
+  setBackgroundColor: (color: string) => void;
   enableClosingConfirmation: () => void;
   CloudStorage: {
     setItem: (key: string, value: string, callback?: (err: Error | null, stored: boolean) => void) => void;
@@ -68,7 +70,7 @@ export interface TelegramWebApp {
 
 declare global {
   interface Window {
-    Telegram: {
+    Telegram?: {
       WebApp: TelegramWebApp;
     };
   }

@@ -9,15 +9,13 @@ import {
   subMonths,
   startOfWeek,
   endOfWeek,
-  addDays,
-  subDays
 } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Wand2, Loader2 } from 'lucide-react';
 
 import { ShiftData, UserCredentials } from './types';
 import { DEFAULT_SHIFT } from './constants';
-import { storage, compressShifts, decompressShifts } from './utils';
+import { storage, compressShifts, decompressShifts, haptic } from './utils';
 import ProfileBadge from './components/ProfileBadge';
 import ShiftModal from './components/ShiftModal';
 import ToolsModal from './components/ToolsModal';
@@ -35,16 +33,6 @@ const App: React.FC = () => {
   const [isToolsModalOpen, setIsToolsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | string>('guest');
-
-  const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' | 'success' | 'warning' | 'error' | 'selection') => {
-    const tg = window.Telegram?.WebApp;
-    if (!tg?.HapticFeedback) return;
-    try {
-      if (type === 'selection') tg.HapticFeedback.selectionChanged();
-      else if (['success', 'warning', 'error'].includes(type)) tg.HapticFeedback.notificationOccurred(type as any);
-      else tg.HapticFeedback.impactOccurred(type as any);
-    } catch (e) {}
-  };
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -108,7 +96,7 @@ const App: React.FC = () => {
   }, [selectedDate, shifts]);
 
   const handleDayClick = (date: Date) => {
-    triggerHaptic('selection');
+    haptic.selection();
     const dateKey = format(date, 'yyyy-MM-dd');
     setSelectedDate(dateKey);
   };
@@ -138,12 +126,12 @@ const App: React.FC = () => {
         {/* Calendar Section */}
         <section className="bg-white rounded-[2.5rem] shadow-2xl p-4 mx-2">
             <div className="flex items-center justify-between px-4 mb-4">
-                <button onClick={() => { triggerHaptic('light'); setCurrentDate(subMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronLeft size={20} /></button>
+                <button onClick={() => { haptic.impact('light'); setCurrentDate(subMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronLeft size={20} /></button>
                 <div className="flex flex-col items-center">
                     <h2 className="font-black text-lg uppercase tracking-widest text-[#D40511]">{format(currentDate, 'LLLL', { locale: uk })}</h2>
                     <span className="text-[10px] font-bold text-slate-400">{format(currentDate, 'yyyy')}</span>
                 </div>
-                <button onClick={() => { triggerHaptic('light'); setCurrentDate(addMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronRight size={20} /></button>
+                <button onClick={() => { haptic.impact('light'); setCurrentDate(addMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronRight size={20} /></button>
             </div>
             
             <div className="grid grid-cols-7 pb-2 mb-2 border-b border-slate-100">
@@ -159,11 +147,11 @@ const App: React.FC = () => {
 
                     const isCurrentMonth = isSameMonth(day, currentDate);
                     
-                    const prevKey = index > 0 ? calendarKeys[index - 1] : format(subDays(day, 1), 'yyyy-MM-dd');
-                    const nextKey = index < calendarKeys.length - 1 ? calendarKeys[index + 1] : format(addDays(day, 1), 'yyyy-MM-dd');
+                    const prevKey = calendarKeys[index - 1] ?? null;
+                    const nextKey = calendarKeys[index + 1] ?? null;
                     
-                    const isPrev = shift?.isWorkDay && shifts[prevKey]?.isWorkDay;
-                    const isNext = shift?.isWorkDay && shifts[nextKey]?.isWorkDay;
+                    const isPrev = shift?.isWorkDay && prevKey && shifts[prevKey]?.isWorkDay;
+                    const isNext = shift?.isWorkDay && nextKey && shifts[nextKey]?.isWorkDay;
                     
                     return (
                         <div 
@@ -198,7 +186,7 @@ const App: React.FC = () => {
 
       {/* Tools Button */}
       <div className="fixed bottom-8 right-6 z-20">
-        <button onClick={() => { triggerHaptic('rigid'); setIsToolsModalOpen(true); }} className="w-14 h-14 rounded-full bg-black text-white shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#FFCC00]">
+        <button onClick={() => { haptic.impact('rigid'); setIsToolsModalOpen(true); }} className="w-14 h-14 rounded-full bg-black text-white shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#FFCC00]">
             <Wand2 size={20} />
         </button>
       </div>
@@ -211,7 +199,7 @@ const App: React.FC = () => {
           setShifts(prev => ({ ...prev, [updated.id]: { ...updated, isWorkDay: true } })); 
         }}
         onDelete={() => { 
-          triggerHaptic('warning'); 
+          haptic.notification('warning'); 
           setShifts(prev => { 
             const n = { ...prev }; 
             if (activeShift) delete n[activeShift.id]; 
@@ -233,7 +221,7 @@ const App: React.FC = () => {
                 }
             });
             setShifts(newShifts);
-            triggerHaptic('success');
+            haptic.notification('success');
         }}
       />
     </div>

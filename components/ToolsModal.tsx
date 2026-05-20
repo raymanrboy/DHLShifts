@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { Check, Settings } from 'lucide-react';
+import { haptic } from '../utils';
 
 interface ToolsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onGenerate: (selectedDayIndices: number[]) => void;
 }
+
+const DAYS = [
+  { label: 'Нд', index: 0 }, { label: 'Пн', index: 1 }, { label: 'Вт', index: 2 }, 
+  { label: 'Ср', index: 3 }, { label: 'Чт', index: 4 }, { label: 'Пт', index: 5 }, { label: 'Сб', index: 6 },
+];
+const DISPLAY_DAYS = [...DAYS.slice(1), DAYS[0]];
 
 const ToolsModal: React.FC<ToolsModalProps> = ({ 
   isOpen, 
@@ -14,34 +21,21 @@ const ToolsModal: React.FC<ToolsModalProps> = ({
 }) => {
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
 
-
-  const triggerHaptic = (type: 'selection' | 'soft') => {
-    const tg = window.Telegram?.WebApp;
-    if (tg?.isVersionAtLeast?.('6.1') && tg.HapticFeedback) {
-      if (type === 'selection') tg.HapticFeedback.selectionChanged();
-      else tg.HapticFeedback.impactOccurred('soft');
-    }
-  };
-
   const toggleDay = (dayIndex: number) => {
-    triggerHaptic('selection');
+    haptic.selection();
     setSelectedDays(prev => 
       prev.includes(dayIndex) ? prev.filter(d => d !== dayIndex) : [...prev, dayIndex]
     );
   };
 
-  const DAYS = [
-    { label: 'Нд', index: 0 }, { label: 'Пн', index: 1 }, { label: 'Вт', index: 2 }, 
-    { label: 'Ср', index: 3 }, { label: 'Чт', index: 4 }, { label: 'Пт', index: 5 }, { label: 'Сб', index: 6 },
-  ];
-  const DISPLAY_DAYS = [...DAYS.slice(1), DAYS[0]];
+  if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-end md:items-center justify-center transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-      <div className="absolute inset-0 bg-[#F2F4F8]/80 dark:bg-black/80 backdrop-blur-sm" onClick={onClose} style={{ willChange: 'opacity' }} />
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center transition-opacity duration-300 opacity-100">
+      <div className="absolute inset-0 bg-[#F2F4F8]/80 dark:bg-black/80 backdrop-blur-sm" onClick={onClose} />
       
       <div 
-        className={`relative bg-white dark:bg-[#1e1e1e] w-full md:w-[480px] rounded-t-[3rem] md:rounded-[3rem] shadow-2xl border border-white dark:border-white/5 overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+        className="relative bg-white dark:bg-[#1e1e1e] w-full md:w-[480px] rounded-t-[3rem] md:rounded-[3rem] shadow-2xl border border-white dark:border-white/5 overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform translate-y-0"
       >
         <div className="md:hidden w-full flex justify-center pt-4" onClick={onClose}>
             <div className="w-16 h-1.5 bg-slate-200 dark:bg-gray-700 rounded-full"></div>

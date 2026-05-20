@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Mail, User, Lock, Eye, EyeOff } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { UserCredentials } from '../types';
+import { haptic } from '../utils';
 
 interface ProfileBadgeProps {
   credentials: UserCredentials;
@@ -12,28 +13,26 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const toggleFlip = (id: string) => {
-    const tg = window.Telegram?.WebApp;
     if (activeCardId === id) {
       setActiveCardId(null);
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      haptic.impact('light');
     } else {
       setActiveCardId(id);
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+      haptic.impact('medium');
     }
   };
 
   const togglePassword = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowPassword(!showPassword);
-    const tg = window.Telegram?.WebApp;
-    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    haptic.impact('medium');
   };
 
-  const cards = [
+  const cards = useMemo(() => [
     { id: 'email', label: 'Work Email dhl.com', value: credentials.email.split('@')[0], barcodeValue: credentials.email.toLowerCase(), icon: <Mail size={20} /> },
     { id: 'login', label: 'Login ID', value: credentials.login, icon: <User size={20} /> },
     { id: 'password', label: 'Password', value: credentials.password || '******', icon: <Lock size={20} /> },
-  ];
+  ], [credentials]);
 
   const activeCard = cards.find(c => c.id === activeCardId);
 
@@ -104,42 +103,42 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
         <div className="shrink-0 w-1" aria-hidden="true" />
       </div>
 
-      {/* Full-screen barcode overlay — blur layer is always mounted for instant GPU compositing */}
-      <div 
-        className={`fixed inset-0 z-50 flex items-center justify-center p-6 transition-opacity duration-300 ${activeCardId ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        style={{ willChange: 'opacity' }}
-      >
-         {/* Backdrop */}
-         <div 
-           className="absolute inset-0 bg-[#F2F4F8]/80 backdrop-blur-sm"
-           style={{ willChange: 'opacity' }}
-           onClick={() => setActiveCardId(null)}
-         />
-         
-         {/* Barcode card */}
-         <div
-            onClick={() => setActiveCardId(null)}
-            className={`w-full max-w-sm bg-white rounded-[2rem] shadow-2xl z-10 cursor-pointer relative border-2 border-[#D40511] flex flex-col items-center justify-between py-8 px-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${activeCardId ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'}`}
-            style={{ height: '55vh', maxHeight: '400px' }}
-         >
-             <p className="text-sm font-black text-[#D40511] uppercase tracking-widest leading-none mt-2">
-               {activeCard?.id === 'email' ? 'Work Email' : activeCard?.label} Barcode
-             </p>
-             <div className="w-full flex-1 mt-6 mb-4 flex items-center justify-center overflow-hidden">
-                {activeCard && (
-                  <Barcode 
-                    value={'barcodeValue' in activeCard ? (activeCard as any).barcodeValue : activeCard.value} 
-                    displayValue={false} 
-                    width={2} 
-                    height={200} 
-                    margin={0} 
-                    background="transparent" 
-                    lineColor="#0f172a" 
-                  />
-                )}
-             </div>
-         </div>
-      </div>
+      {/* Full-screen barcode overlay — only mounted when a card is active */}
+      {activeCardId && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-6 transition-opacity duration-300 opacity-100"
+        >
+           {/* Backdrop */}
+           <div 
+             className="absolute inset-0 bg-[#F2F4F8]/80 backdrop-blur-sm"
+             onClick={() => setActiveCardId(null)}
+           />
+           
+           {/* Barcode card */}
+           <div
+              onClick={() => setActiveCardId(null)}
+              className="w-full max-w-sm bg-white rounded-[2rem] shadow-2xl z-10 cursor-pointer relative border-2 border-[#D40511] flex flex-col items-center justify-between py-8 px-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform scale-100 translate-y-0"
+              style={{ height: '55vh', maxHeight: '400px' }}
+           >
+               <p className="text-sm font-black text-[#D40511] uppercase tracking-widest leading-none mt-2">
+                 {activeCard?.id === 'email' ? 'Work Email' : activeCard?.label} Barcode
+               </p>
+               <div className="w-full flex-1 mt-6 mb-4 flex items-center justify-center overflow-hidden">
+                  {activeCard && (
+                    <Barcode 
+                      value={'barcodeValue' in activeCard ? (activeCard as any).barcodeValue : activeCard.value} 
+                      displayValue={false} 
+                      width={2} 
+                      height={200} 
+                      margin={0} 
+                      background="transparent" 
+                      lineColor="#0f172a" 
+                    />
+                  )}
+               </div>
+           </div>
+        </div>
+      )}
 
     </div>
   );
