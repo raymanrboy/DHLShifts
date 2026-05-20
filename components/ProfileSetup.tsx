@@ -74,7 +74,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight">
+            <h1 className="text-2xl font-black uppercase tracking-tight text-[#D40511]">
               {isEditing ? 'Редагувати профіль' : 'Налаштуй профіль'}
             </h1>
             <p className="text-xs font-bold text-black/50 uppercase tracking-widest mt-0.5">

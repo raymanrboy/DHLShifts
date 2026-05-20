@@ -75,7 +75,7 @@ export const decompressShifts = (data: any): Record<string, ShiftData> => {
 /**
  * Resizes an image file to a square JPEG, returns base64 data URL.
  */
-export const resizePhoto = (file: File, size = 300, quality = 0.8): Promise<string> => {
+export const resizePhoto = (file: File, size = 500, quality = 0.8): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = reject;
