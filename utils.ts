@@ -13,10 +13,6 @@ export const adjustTime = (timeStr: string, deltaHours: number): string => {
 
 // --- Haptic Feedback ---
 
-/**
- * Shared haptic feedback utilities.
- * Single source of truth for all Telegram haptic interactions.
- */
 export const haptic = {
   impact: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => {
     try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(style); } catch {}
@@ -31,14 +27,9 @@ export const haptic = {
 
 // --- Storage Optimization (Compression) ---
 
-/**
- * Compresses the Shifts object to a minimal string format to save storage space.
- * Format: "YYYY-MM-DD": "Start|End|IsCompleted(0/1)"
- */
 export const compressShifts = (shifts: Record<string, ShiftData>): Record<string, string> => {
   const compressed: Record<string, string> = {};
   Object.values(shifts).forEach(shift => {
-    // We only save actual work days to save space
     if (shift.isWorkDay) {
        compressed[shift.date] = `${shift.startTime}|${shift.endTime}|${shift.isCompleted ? 1 : 0}`;
     }
@@ -46,25 +37,27 @@ export const compressShifts = (shifts: Record<string, ShiftData>): Record<string
   return compressed;
 };
 
-/**
- * Decompresses storage data back into full ShiftData objects.
- * Handles both legacy (full JSON) and new (compressed string) formats.
- */
 export const decompressShifts = (data: any): Record<string, ShiftData> => {
    const shifts: Record<string, ShiftData> = {};
    if (!data || typeof data !== 'object') return shifts;
 
    Object.entries(data).forEach(([date, value]) => {
-      if (typeof value === 'object' && value !== null && 'id' in value) {
-         // Handle Legacy Format
-         shifts[date] = value as ShiftData;
+      if (typeof value === 'object' && value !== null) {
+         // Handle Legacy Format (may have `id` field — we ignore it)
+         const legacy = value as any;
+         shifts[date] = {
+           date: legacy.date || date,
+           isWorkDay: legacy.isWorkDay ?? true,
+           startTime: legacy.startTime,
+           endTime: legacy.endTime,
+           isCompleted: legacy.isCompleted ?? false,
+         };
       } else if (typeof value === 'string') {
-         // Handle New Compressed Format "Start|End|Completed"
+         // Handle Compressed Format "Start|End|Completed"
          const parts = value.split('|');
          if (parts.length >= 2) {
              const [start, end, completed] = parts;
              shifts[date] = {
-               id: date,
                date: date,
                isWorkDay: true,
                startTime: start,
@@ -77,6 +70,36 @@ export const decompressShifts = (data: any): Record<string, ShiftData> => {
    return shifts;
 };
 
+// --- Photo Utilities ---
+
+/**
+ * Resizes an image file to a square JPEG, returns base64 data URL.
+ */
+export const resizePhoto = (file: File, size = 300, quality = 0.8): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d')!;
+        // Center-crop to square
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2;
+        const sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
 // --- Cloud Storage Helpers ---
 
 const isCloudStorageSupported = (): boolean => {
@@ -86,26 +109,22 @@ const isCloudStorageSupported = (): boolean => {
 
 export const storage = {
   get: async (key: string): Promise<any | null> => {
-    // Try cloud first if supported
     if (isCloudStorageSupported()) {
       try {
         const cloudValue = await new Promise<string | null>((resolve) => {
-           window.Telegram.WebApp.CloudStorage.getItem(key, (err, value) => {
+           window.Telegram!.WebApp.CloudStorage.getItem(key, (err, value) => {
               if (err) resolve(null);
               else resolve(value || null);
            });
         });
-
         if (cloudValue) {
           localStorage.setItem(key, cloudValue);
           return JSON.parse(cloudValue);
         }
       } catch (e) {
-        console.warn('CloudStorage access failed:', e);
+        console.warn('CloudStorage read failed:', e);
       }
     }
-    
-    // Fallback to local
     const local = localStorage.getItem(key);
     return local ? JSON.parse(local) : null;
   },
@@ -113,11 +132,10 @@ export const storage = {
   set: async (key: string, value: any): Promise<boolean> => {
     const stringValue = JSON.stringify(value);
     localStorage.setItem(key, stringValue);
-
     if (isCloudStorageSupported()) {
       try {
         await new Promise((resolve) => {
-          window.Telegram.WebApp.CloudStorage.setItem(key, stringValue, (err, stored) => {
+          window.Telegram!.WebApp.CloudStorage.setItem(key, stringValue, (err, stored) => {
             resolve(stored);
           });
         });

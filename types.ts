@@ -1,13 +1,12 @@
 export interface ShiftData {
-  id: string; // usually the date string YYYY-MM-DD
-  date: string;
+  date: string;        // "YYYY-MM-DD" — also used as key
   isWorkDay: boolean;
-  startTime: string; // Format "HH:mm"
-  endTime: string;   // Format "HH:mm"
-  isCompleted: boolean; // Has the user actually worked this shift?
+  startTime: string;   // Format "HH:mm"
+  endTime: string;     // Format "HH:mm"
+  isCompleted: boolean;
 }
 
-export interface UserCredentials {
+export interface UserProfile {
   email: string;
   login: string;
   password?: string;
@@ -20,6 +19,7 @@ export interface TelegramWebAppUser {
   last_name?: string;
   username?: string;
   language_code?: string;
+  photo_url?: string;
 }
 
 export interface TelegramWebAppInitData {
