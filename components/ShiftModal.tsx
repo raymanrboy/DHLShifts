@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon, Minus, Plus, Trash2, Clock, Lock } from 'lucide-react';
 import { format } from 'date-fns';
-import { uk } from 'date-fns/locale';
 import { ShiftData } from '../types';
 import { adjustTime, haptic, calcHours } from '../utils';
+import { useTranslation } from '../i18n';
 
 interface ShiftModalProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ interface ShiftModalProps {
 }
 
 const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, mode, onSave, onDelete }) => {
+  const { t, locale } = useTranslation();
   const [draft, setDraft] = useState<ShiftData>(shift);
 
   useEffect(() => {
@@ -25,14 +26,12 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, mode, o
 
   const handleSaveAndClose = () => {
     haptic.notification('success');
-    // If not fact mode, we are saving to plan, we don't care about actual time.
-    // Actually, saving just propagates the draft to App.tsx
     onSave(draft);
     onClose();
   };
 
   const formattedDate = draft.date
-    ? format(new Date(draft.date), 'd MMMM yyyy', { locale: uk })
+    ? format(new Date(draft.date), 'd MMMM yyyy', { locale })
     : draft.date;
 
   if (!isOpen) return null;
@@ -84,7 +83,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, mode, o
 
         <div className="px-8 pt-6 pb-4 flex justify-between items-start">
           <div>
-            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">{shift.isWorkDay ? 'Зміна' : 'Нова зміна'}</h2>
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">{shift.isWorkDay ? t('shift') : t('newShift')}</h2>
             <div className="flex items-center gap-2 mt-1 text-slate-400 font-bold uppercase text-[10px] tracking-widest">
               <CalendarIcon size={14} className="opacity-60 text-[#D40511]" />
               <span>{formattedDate}</span>
@@ -99,11 +98,11 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, mode, o
           {isFact && shift.isWorkDay && (
             <div className="bg-slate-50 dark:bg-[#1a1a1a] p-4 rounded-2xl border border-slate-100 dark:border-white/5 flex justify-between items-center">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ПЛАН</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('plan')}</p>
                 <div className="flex items-center gap-2 text-slate-500">
                    <Clock size={14} />
                    <span className="font-bold text-sm">{draft.startTime} &rarr; {draft.endTime}</span>
-                   <span className="text-xs">({planHours} год)</span>
+                   <span className="text-xs">({planHours} {t('hoursShort')})</span>
                 </div>
               </div>
               <Lock size={16} className="text-slate-300" />
@@ -114,7 +113,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, mode, o
              <div className="flex items-center justify-between bg-slate-50 dark:bg-[#1a1a1a] p-4 rounded-2xl border border-slate-100 dark:border-white/5">
                  <div className="flex items-center gap-3">
                      <div className={`w-3 h-3 rounded-full ${draft.isCompleted ? 'bg-[#D40511]' : 'bg-slate-300'}`} />
-                     <span className="font-black text-slate-700 dark:text-gray-300 uppercase text-xs tracking-wider">Відпрацьовано</span>
+                     <span className="font-black text-slate-700 dark:text-gray-300 uppercase text-xs tracking-wider">{t('completed')}</span>
                  </div>
                  <button onClick={() => { haptic.impact('medium'); setDraft({ ...draft, isCompleted: !draft.isCompleted }); }} className={`w-14 h-8 rounded-full relative transition-all duration-300 ${draft.isCompleted ? 'bg-[#D40511]' : 'bg-slate-200 dark:bg-[#333]'}`}>
                      <div className={`absolute top-1 bottom-1 left-1 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ${draft.isCompleted ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -124,8 +123,8 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, mode, o
 
           <div className="space-y-4">
              {[
-               { field: 'start' as const, label: 'ПОЧАТОК', val: displayStart },
-               { field: 'end' as const, label: 'КІНЕЦЬ', val: displayEnd }
+               { field: 'start' as const, label: t('start'), val: displayStart },
+               { field: 'end' as const, label: t('end'), val: displayEnd }
              ].map(item => (
                 <div key={item.field} className="flex items-center justify-between group">
                     <div className="flex items-center gap-2">
@@ -170,7 +169,7 @@ const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose, shift, mode, o
               onClick={handleSaveAndClose}
               className="flex-1 h-14 rounded-2xl bg-[#D40511] text-white font-black uppercase tracking-widest text-sm active:scale-95 transition-all shadow-lg shadow-red-500/20 border-b-4 border-red-800"
             >
-                {isFact ? 'Зберегти' : 'Зберегти до плану'}
+                {isFact ? t('save') : t('saveToPlan')}
             </button>
           </div>
         </div>

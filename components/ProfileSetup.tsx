@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Camera, Mail, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, Language } from '../types';
 import { resizePhoto, haptic } from '../utils';
+import { useTranslation } from '../i18n';
 
 interface ProfileSetupProps {
   initialProfile: UserProfile | null;
@@ -18,10 +19,12 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { t, language } = useTranslation();
   const [email, setEmail] = useState(initialProfile?.email || '');
   const [login, setLogin] = useState(initialProfile?.login || '');
   const [password, setPassword] = useState(initialProfile?.password || '');
   const [photo, setPhoto] = useState<string | null>(initialPhoto || null);
+  const [selectedLang, setSelectedLang] = useState<Language>(initialProfile?.language || 'EN');
   const [showPassword, setShowPassword] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -49,7 +52,12 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       return;
     }
     haptic.notification('success');
-    onSave({ email: email.trim().toUpperCase(), login: login.trim(), password: password || undefined }, photo);
+    onSave({ 
+      email: email.trim().toUpperCase(), 
+      login: login.trim(), 
+      password: password || undefined,
+      language: selectedLang
+    }, photo);
   };
 
   const isEditing = !!initialProfile;
@@ -75,12 +83,25 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
           )}
           <div>
             <h1 className="text-2xl font-black uppercase tracking-tight text-[#D40511]">
-              {isEditing ? 'Редагувати профіль' : 'Налаштуй профіль'}
+              {isEditing ? t('editProfile') : t('setupProfile')}
             </h1>
             <p className="text-xs font-bold text-black/50 uppercase tracking-widest mt-0.5">
               DHL Digital ID
             </p>
           </div>
+        </div>
+
+        {/* Language Switcher */}
+        <div className="flex bg-white/30 rounded-2xl p-1 mb-8 shadow-sm">
+           {(['PL', 'EN', 'UA'] as Language[]).map((lang) => (
+              <button 
+                key={lang}
+                onClick={() => { haptic.selection(); setSelectedLang(lang); }}
+                className={`flex-1 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all ${selectedLang === lang ? 'bg-white text-slate-800 shadow-md scale-105 z-10' : 'text-black/60 hover:bg-white/10'}`}
+              >
+                {lang}
+              </button>
+           ))}
         </div>
 
         {/* Photo Upload */}
@@ -124,7 +145,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
               </div>
               <div className="flex-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                  Work Email @DHL.COM
+                  {t('workEmailLabel')} @DHL.COM
                 </label>
                 <input
                   type="email"
@@ -145,7 +166,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
               </div>
               <div className="flex-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                  Login ID
+                  {t('loginLabel')}
                 </label>
                 <input
                   type="text"
@@ -166,7 +187,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
               </div>
               <div className="flex-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                  Password (опціонально)
+                  {t('passwordOptional')}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -195,7 +216,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             disabled={!email.trim() || !login.trim()}
             className="w-full h-16 rounded-2xl bg-[#D40511] text-white font-black uppercase tracking-widest text-sm active:scale-95 transition-all shadow-lg shadow-red-500/20 border-b-4 border-red-800 disabled:opacity-40 disabled:active:scale-100"
           >
-            Зберегти профіль
+            {t('saveProfile')}
           </button>
         </div>
 

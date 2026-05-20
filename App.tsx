@@ -10,10 +10,9 @@ import {
   startOfWeek,
   endOfWeek,
 } from 'date-fns';
-import { uk } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Loader2, ClipboardList, CheckCircle2 } from 'lucide-react';
 
-import { ShiftData, UserProfile } from './types';
+import { ShiftData, UserProfile, Language } from './types';
 import { DEFAULT_SHIFT } from './constants';
 import { storage, compressShifts, decompressShifts, haptic } from './utils';
 import ProfileBadge from './components/ProfileBadge';
@@ -22,89 +21,21 @@ import ShiftModal from './components/ShiftModal';
 import CalendarGrid from './components/CalendarGrid';
 import PlannerActions from './components/PlannerActions';
 import HoursSummary from './components/HoursSummary';
+import { LanguageProvider, useTranslation } from './i18n';
 
-const App: React.FC = () => {
+// We extract the main UI into InnerApp so it can use `useTranslation` hook
+const InnerApp: React.FC<{
+  profile: UserProfile;
+  profilePhoto: string | null;
+  tgAvatarUrl: string | null;
+  shifts: Record<string, ShiftData>;
+  setShifts: React.Dispatch<React.SetStateAction<Record<string, ShiftData>>>;
+  setIsEditingProfile: (val: boolean) => void;
+}> = ({ profile, profilePhoto, tgAvatarUrl, shifts, setShifts, setIsEditingProfile }) => {
+  const { t, locale } = useTranslation();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [shifts, setShifts] = useState<Record<string, ShiftData>>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarMode, setCalendarMode] = useState<'planner' | 'fact'>('fact');
-  const [isLoading, setIsLoading] = useState(true);
-  const [userId, setUserId] = useState<number | string>('guest');
-  const [tgAvatarUrl, setTgAvatarUrl] = useState<string | null>(null);
-
-  // Profile state
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-
-  // --- Telegram Init ---
-  useEffect(() => {
-    const tg = window.Telegram?.WebApp;
-    if (!tg) return;
-    tg.ready();
-    tg.expand();
-    try {
-      if (tg.setHeaderColor) tg.setHeaderColor('#FFCC00');
-      if (tg.setBackgroundColor) tg.setBackgroundColor('#FFCC00');
-    } catch (e) {}
-    if (tg.isVersionAtLeast?.('6.2')) tg.enableClosingConfirmation();
-    if (tg.initDataUnsafe?.user?.id) setUserId(tg.initDataUnsafe.user.id);
-    if (tg.initDataUnsafe?.user?.photo_url) setTgAvatarUrl(tg.initDataUnsafe.user.photo_url);
-  }, []);
-
-  // --- Storage Keys ---
-  const shiftsKey = useMemo(() => `shifts_v2_${userId}`, [userId]);
-  const profileKey = useMemo(() => `profile_v1_${userId}`, [userId]);
-  const photoKey = useMemo(() => `profile_photo_${userId}`, [userId]);
-
-  // --- Load Profile + Shifts ---
-  useEffect(() => {
-    const loadAll = async () => {
-      setIsLoading(true);
-      try {
-        const [storedShifts, storedProfile] = await Promise.all([
-          storage.get(shiftsKey),
-          storage.get(profileKey),
-        ]);
-        if (storedShifts) setShifts(decompressShifts(storedShifts));
-        if (storedProfile) setProfile(storedProfile as UserProfile);
-
-        // Photo from localStorage (too large for CloudStorage)
-        const photo = localStorage.getItem(photoKey);
-        if (photo) setProfilePhoto(photo);
-      } catch (e) {
-        console.error("Load failed");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadAll();
-  }, [shiftsKey, profileKey, photoKey]);
-
-  // --- Auto-save Shifts ---
-  useEffect(() => {
-    if (!isLoading) {
-       const handler = setTimeout(() => {
-         storage.set(shiftsKey, compressShifts(shifts));
-       }, 500);
-       return () => clearTimeout(handler);
-    }
-  }, [shifts, shiftsKey, isLoading]);
-
-  // --- Profile Save Handler ---
-  const handleProfileSave = async (newProfile: UserProfile, photo: string | null) => {
-    setProfile(newProfile);
-    setProfilePhoto(photo);
-    setIsEditingProfile(false);
-
-    await storage.set(profileKey, newProfile);
-
-    if (photo) {
-      localStorage.setItem(photoKey, photo);
-    } else {
-      localStorage.removeItem(photoKey);
-    }
-  };
 
   // --- Calendar ---
   const calendarDays = useMemo(() => {
@@ -161,33 +92,10 @@ const App: React.FC = () => {
     setShifts(newShifts);
   };
 
-  // --- Loading ---
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#FFCC00] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#D40511] w-10 h-10" />
-      </div>
-    );
-  }
+  const daysLabel = t('days') as string[];
 
-  // --- Profile Setup (first launch or editing) ---
-  if (!profile || isEditingProfile) {
-    return (
-      <ProfileSetup
-        initialProfile={profile}
-        initialPhoto={profilePhoto}
-        tgAvatarUrl={tgAvatarUrl}
-        onSave={handleProfileSave}
-        onCancel={profile ? () => setIsEditingProfile(false) : undefined}
-      />
-    );
-  }
-
-  // --- Main App ---
   return (
     <div className="min-h-screen bg-[#FFCC00] text-black pb-32 overflow-x-hidden font-sans">
-
-      {/* Top Logo */}
       <div
         className="flex justify-center w-full px-6 pb-2 pointer-events-none"
         style={{
@@ -198,45 +106,43 @@ const App: React.FC = () => {
       </div>
 
       <main className="max-w-xl mx-auto px-2 space-y-6">
-
-        {/* Profile Badge */}
         <ProfileBadge
           profile={profile}
           photoUrl={profilePhoto || tgAvatarUrl}
           onEditProfile={() => setIsEditingProfile(true)}
         />
 
-        {/* Calendar Section */}
         <section className="bg-white rounded-[2.5rem] shadow-2xl p-4 mx-2">
             <div className="flex items-center justify-between px-4 mb-4">
                 <button onClick={() => { haptic.impact('light'); setCurrentDate(subMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronLeft size={20} /></button>
                 <div className="flex flex-col items-center">
-                    <h2 className="font-black text-lg uppercase tracking-widest text-[#D40511]">{format(currentDate, 'LLLL', { locale: uk })}</h2>
+                    <h2 className="font-black text-lg uppercase tracking-widest text-[#D40511]">
+                      {format(currentDate, 'LLLL', { locale })}
+                    </h2>
                     <span className="text-[10px] font-bold text-slate-400">{format(currentDate, 'yyyy')}</span>
                 </div>
                 <button onClick={() => { haptic.impact('light'); setCurrentDate(addMonths(currentDate, 1)); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full shadow-sm text-slate-600 active:scale-95 transition-all"><ChevronRight size={20} /></button>
             </div>
 
-            {/* Mode Switcher */}
             <div className="flex bg-slate-50 rounded-2xl p-1 mb-4 shadow-inner">
                <button 
                  onClick={() => { haptic.selection(); setCalendarMode('planner'); }}
                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${calendarMode === 'planner' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                >
                  <ClipboardList size={16} className={calendarMode === 'planner' ? 'text-[#D40511]' : ''} />
-                 Планувальник
+                 {t('planner')}
                </button>
                <button 
                  onClick={() => { haptic.selection(); setCalendarMode('fact'); }}
                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${calendarMode === 'fact' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                >
                  <CheckCircle2 size={16} className={calendarMode === 'fact' ? 'text-[#FFCC00]' : ''} />
-                 Графік
+                 {t('fact')}
                </button>
             </div>
 
             <div className="grid grid-cols-7 pb-2 mb-2 border-b border-slate-100">
-                {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map((day, i) => (
+                {[daysLabel[1], daysLabel[2], daysLabel[3], daysLabel[4], daysLabel[5], daysLabel[6], daysLabel[0]].map((day, i) => (
                     <div key={day} className={`text-center text-[11px] font-black uppercase tracking-widest ${i >= 5 ? 'text-[#D40511]' : 'text-slate-400'}`}>{day}</div>
                 ))}
             </div>
@@ -277,8 +183,118 @@ const App: React.FC = () => {
           setSelectedDate(null);
         }}
       />
-
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  const [shifts, setShifts] = useState<Record<string, ShiftData>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<number | string>('guest');
+  const [tgAvatarUrl, setTgAvatarUrl] = useState<string | null>(null);
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+    tg.ready();
+    tg.expand();
+    try {
+      if (tg.setHeaderColor) tg.setHeaderColor('#FFCC00');
+      if (tg.setBackgroundColor) tg.setBackgroundColor('#FFCC00');
+    } catch (e) {}
+    if (tg.isVersionAtLeast?.('6.2')) tg.enableClosingConfirmation();
+    if (tg.initDataUnsafe?.user?.id) setUserId(tg.initDataUnsafe.user.id);
+    if (tg.initDataUnsafe?.user?.photo_url) setTgAvatarUrl(tg.initDataUnsafe.user.photo_url);
+  }, []);
+
+  const shiftsKey = useMemo(() => `shifts_v2_${userId}`, [userId]);
+  const profileKey = useMemo(() => `profile_v1_${userId}`, [userId]);
+  const photoKey = useMemo(() => `profile_photo_${userId}`, [userId]);
+
+  useEffect(() => {
+    const loadAll = async () => {
+      setIsLoading(true);
+      try {
+        const [storedShifts, storedProfile] = await Promise.all([
+          storage.get(shiftsKey),
+          storage.get(profileKey),
+        ]);
+        if (storedShifts) setShifts(decompressShifts(storedShifts));
+        if (storedProfile) setProfile(storedProfile as UserProfile);
+
+        const photo = localStorage.getItem(photoKey);
+        if (photo) setProfilePhoto(photo);
+      } catch (e) {
+        console.error("Load failed");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAll();
+  }, [shiftsKey, profileKey, photoKey]);
+
+  useEffect(() => {
+    if (!isLoading) {
+       const handler = setTimeout(() => {
+         storage.set(shiftsKey, compressShifts(shifts));
+       }, 500);
+       return () => clearTimeout(handler);
+    }
+  }, [shifts, shiftsKey, isLoading]);
+
+  const handleProfileSave = async (newProfile: UserProfile, photo: string | null) => {
+    setProfile(newProfile);
+    setProfilePhoto(photo);
+    setIsEditingProfile(false);
+
+    await storage.set(profileKey, newProfile);
+
+    if (photo) {
+      localStorage.setItem(photoKey, photo);
+    } else {
+      localStorage.removeItem(photoKey);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#FFCC00] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#D40511] w-10 h-10" />
+      </div>
+    );
+  }
+
+  const currentLanguage: Language = profile?.language || 'EN';
+
+  if (!profile || isEditingProfile) {
+    return (
+      <LanguageProvider language={currentLanguage}>
+        <ProfileSetup
+          initialProfile={profile}
+          initialPhoto={profilePhoto}
+          tgAvatarUrl={tgAvatarUrl}
+          onSave={handleProfileSave}
+          onCancel={profile ? () => setIsEditingProfile(false) : undefined}
+        />
+      </LanguageProvider>
+    );
+  }
+
+  return (
+    <LanguageProvider language={currentLanguage}>
+      <InnerApp 
+        profile={profile}
+        profilePhoto={profilePhoto}
+        tgAvatarUrl={tgAvatarUrl}
+        shifts={shifts}
+        setShifts={setShifts}
+        setIsEditingProfile={setIsEditingProfile}
+      />
+    </LanguageProvider>
   );
 };
 

@@ -8,10 +8,13 @@ export interface ShiftData {
   isCompleted: boolean;
 }
 
+export type Language = 'PL' | 'EN' | 'UA';
+
 export interface UserProfile {
   email: string;
   login: string;
   password?: string;
+  language?: Language;
 }
 
 // Minimal Telegram WebApp types

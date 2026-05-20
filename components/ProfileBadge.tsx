@@ -3,6 +3,7 @@ import { Mail, User, Lock, Eye, EyeOff, Pencil } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { UserProfile } from '../types';
 import { haptic } from '../utils';
+import { useTranslation } from '../i18n';
 
 interface ProfileBadgeProps {
   profile: UserProfile;
@@ -11,6 +12,7 @@ interface ProfileBadgeProps {
 }
 
 const ProfileBadge: React.FC<ProfileBadgeProps> = ({ profile, photoUrl, onEditProfile }) => {
+  const { t } = useTranslation();
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -31,10 +33,10 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ profile, photoUrl, onEditPr
   };
 
   const cards = useMemo(() => [
-    { id: 'email', label: 'Work Email dhl.com', value: profile.email.split('@')[0], barcodeValue: profile.email.toLowerCase(), icon: <Mail size={20} /> },
-    { id: 'login', label: 'Login ID', value: profile.login, icon: <User size={20} /> },
-    { id: 'password', label: 'Password', value: profile.password || '******', icon: <Lock size={20} /> },
-  ], [profile]);
+    { id: 'email', label: `${t('workEmailLabel')} @dhl.com`, value: profile.email.split('@')[0], barcodeValue: profile.email.toLowerCase(), icon: <Mail size={20} /> },
+    { id: 'login', label: t('loginLabel'), value: profile.login, icon: <User size={20} /> },
+    { id: 'password', label: t('passwordLabel'), value: profile.password || '******', icon: <Lock size={20} /> },
+  ], [profile, t]);
 
   const activeCard = cards.find(c => c.id === activeCardId);
 
@@ -130,7 +132,7 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ profile, photoUrl, onEditPr
               style={{ height: '55vh', maxHeight: '400px' }}
            >
                <p className="text-sm font-black text-[#D40511] uppercase tracking-widest leading-none mt-2">
-                 {activeCard?.id === 'email' ? 'Work Email' : activeCard?.label} Barcode
+                 {activeCard?.id === 'email' ? t('workEmailLabel') : activeCard?.label} Barcode
                </p>
                <div className="w-full flex-1 mt-6 mb-4 flex items-center justify-center overflow-hidden">
                   {activeCard && (
