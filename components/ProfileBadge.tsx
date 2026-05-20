@@ -30,7 +30,7 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
   };
 
   const cards = [
-    { id: 'email', label: 'Work Email @DHL.COM', value: credentials.email.split('@')[0], icon: <Mail size={20} /> },
+    { id: 'email', label: 'Work Email dhl.com', value: credentials.email.split('@')[0].replace('.', ' '), barcodeValue: credentials.email.toLowerCase(), icon: <Mail size={20} /> },
     { id: 'login', label: 'Login ID', value: credentials.login, icon: <User size={20} /> },
     { id: 'password', label: 'Password', value: credentials.password || '******', icon: <Lock size={20} /> },
   ];
@@ -128,7 +128,7 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
              <div className="w-full flex-1 mt-6 mb-4 flex items-center justify-center overflow-hidden">
                 {activeCard && (
                   <Barcode 
-                    value={activeCard.value} 
+                    value={'barcodeValue' in activeCard ? (activeCard as any).barcodeValue : activeCard.value} 
                     displayValue={false} 
                     width={2} 
                     height={200} 
