@@ -30,7 +30,7 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
   };
 
   const cards = [
-    { id: 'email', label: 'Work Email dhl.com', value: credentials.email.split('@')[0].replace('.', ' '), barcodeValue: credentials.email.toLowerCase(), icon: <Mail size={20} /> },
+    { id: 'email', label: 'Work Email dhl.com', value: credentials.email.split('@')[0], barcodeValue: credentials.email.toLowerCase(), icon: <Mail size={20} /> },
     { id: 'login', label: 'Login ID', value: credentials.login, icon: <User size={20} /> },
     { id: 'password', label: 'Password', value: credentials.password || '******', icon: <Lock size={20} /> },
   ];
