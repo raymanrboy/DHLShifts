@@ -123,7 +123,7 @@ const ProfileBadge: React.FC<ProfileBadgeProps> = ({ credentials }) => {
             style={{ height: '55vh', maxHeight: '400px' }}
          >
              <p className="text-sm font-black text-[#D40511] uppercase tracking-widest leading-none mt-2">
-               {activeCard?.label} Barcode
+               {activeCard?.id === 'email' ? 'Work Email' : activeCard?.label} Barcode
              </p>
              <div className="w-full flex-1 mt-6 mb-4 flex items-center justify-center overflow-hidden">
                 {activeCard && (
