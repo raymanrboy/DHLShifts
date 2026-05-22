@@ -52,14 +52,27 @@ const InnerApp: React.FC<{
 
   const activeShift = useMemo(() => {
     if (!selectedDate) return null;
-    return shifts[selectedDate] || {
+    const shift = shifts[selectedDate];
+    if (shift) {
+      if (calendarMode === 'planner' && shift.isPlanned === false) {
+        return {
+          date: selectedDate,
+          isWorkDay: false,
+          startTime: DEFAULT_SHIFT.START,
+          endTime: DEFAULT_SHIFT.END,
+          isCompleted: false
+        };
+      }
+      return shift;
+    }
+    return {
       date: selectedDate,
       isWorkDay: false,
       startTime: DEFAULT_SHIFT.START,
       endTime: DEFAULT_SHIFT.END,
       isCompleted: false
     };
-  }, [selectedDate, shifts]);
+  }, [selectedDate, shifts, calendarMode]);
 
   const handleDayClick = (date: Date) => {
     setSelectedDate(format(date, 'yyyy-MM-dd'));
@@ -74,6 +87,7 @@ const InnerApp: React.FC<{
             newShifts[key] = { 
               date: key, 
               isWorkDay: true, 
+              isPlanned: true,
               startTime: dayOfWeek === 1 ? "03:00" : startTime, 
               endTime: dayOfWeek === 1 ? "11:00" : endTime, 
               isCompleted: false 
@@ -88,7 +102,11 @@ const InnerApp: React.FC<{
     const monthPrefix = format(currentDate, 'yyyy-MM');
     Object.keys(newShifts).forEach(key => {
        if (key.startsWith(monthPrefix)) {
-         delete newShifts[key];
+         if (newShifts[key].isPlanned === false) {
+           // Keep unplanned factual shifts
+         } else {
+           delete newShifts[key];
+         }
        }
     });
     setShifts(newShifts);
@@ -173,7 +191,18 @@ const InnerApp: React.FC<{
         shift={activeShift || { date: '', isWorkDay: false, startTime: DEFAULT_SHIFT.START, endTime: DEFAULT_SHIFT.END, isCompleted: false }}
         mode={calendarMode}
         onSave={(updated) => {
-          setShifts(prev => ({ ...prev, [updated.date]: { ...updated, isWorkDay: true } }));
+          setShifts(prev => {
+            const existing = prev[updated.date];
+            const isPlanned = calendarMode === 'planner' ? true : (existing?.isPlanned ?? false);
+            return {
+              ...prev,
+              [updated.date]: {
+                ...updated,
+                isWorkDay: true,
+                isPlanned
+              }
+            };
+          });
         }}
         onDelete={() => {
           haptic.notification('warning');

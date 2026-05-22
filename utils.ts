@@ -50,7 +50,8 @@ export const calcMonthStats = (shifts: Record<string, ShiftData>, monthDate: Dat
     
     if (!shift.date.startsWith(targetPrefix)) return;
 
-    const planHours = calcHours(shift.startTime, shift.endTime);
+    const isPlanned = shift.isPlanned !== false;
+    const planHours = isPlanned ? calcHours(shift.startTime, shift.endTime) : 0;
     planned += planHours;
     
     if (shift.isCompleted) {
@@ -58,7 +59,7 @@ export const calcMonthStats = (shifts: Record<string, ShiftData>, monthDate: Dat
       const actEnd = shift.actualEndTime || shift.endTime;
       actual += calcHours(actStart, actEnd);
     } else {
-      actual += planHours;
+      actual += isPlanned ? planHours : 0;
     }
   });
 
@@ -71,11 +72,10 @@ export const compressShifts = (shifts: Record<string, ShiftData>): Record<string
   const compressed: Record<string, string> = {};
   Object.values(shifts).forEach(shift => {
     if (shift.isWorkDay) {
-       let val = `${shift.startTime}|${shift.endTime}|${shift.isCompleted ? 1 : 0}`;
-       if (shift.actualStartTime || shift.actualEndTime) {
-         val += `|${shift.actualStartTime || shift.startTime}|${shift.actualEndTime || shift.endTime}`;
-       }
-       compressed[shift.date] = val;
+       const actStart = shift.actualStartTime || '';
+       const actEnd = shift.actualEndTime || '';
+       const planned = shift.isPlanned !== false ? '1' : '0';
+       compressed[shift.date] = `${shift.startTime}|${shift.endTime}|${shift.isCompleted ? 1 : 0}|${actStart}|${actEnd}|${planned}`;
     }
   });
   return compressed;
@@ -92,6 +92,7 @@ export const decompressShifts = (data: any): Record<string, ShiftData> => {
          shifts[date] = {
            date: legacy.date || date,
            isWorkDay: legacy.isWorkDay ?? true,
+           isPlanned: legacy.isPlanned ?? true,
            startTime: legacy.startTime,
            endTime: legacy.endTime,
            actualStartTime: legacy.actualStartTime,
@@ -99,17 +100,18 @@ export const decompressShifts = (data: any): Record<string, ShiftData> => {
            isCompleted: legacy.isCompleted ?? false,
          };
       } else if (typeof value === 'string') {
-         // Handle Compressed Format "Start|End|Completed" or "Start|End|Completed|ActualStart|ActualEnd"
+         // Handle Compressed Format "Start|End|Completed" or "Start|End|Completed|ActualStart|ActualEnd|Planned"
          const parts = value.split('|');
          if (parts.length >= 3) {
-             const [start, end, completed, actStart, actEnd] = parts;
+             const [start, end, completed, actStart, actEnd, planned] = parts;
              shifts[date] = {
                date: date,
                isWorkDay: true,
+               isPlanned: planned !== undefined ? planned === '1' : true,
                startTime: start,
                endTime: end,
-               actualStartTime: actStart,
-               actualEndTime: actEnd,
+               actualStartTime: actStart || undefined,
+               actualEndTime: actEnd || undefined,
                isCompleted: completed === '1'
              };
          }

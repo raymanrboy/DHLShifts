@@ -2,6 +2,7 @@
 export interface ShiftData {
   date: string;        // "YYYY-MM-DD" — also used as key
   isWorkDay: boolean;
+  isPlanned?: boolean; // True if created in planner mode, false/undefined if fact-only
   startTime: string;   // Planned start "HH:mm"
   endTime: string;     // Planned end "HH:mm"
   actualStartTime?: string; // Actual start (only if different from plan)
