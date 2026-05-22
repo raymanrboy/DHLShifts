@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, isSameMonth, isToday } from 'date-fns';
+import { format, isSameMonth } from 'date-fns';
 import { ShiftData } from '../types';
 import { haptic, calcHours } from '../utils';
 
@@ -56,7 +56,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ mode, currentDate, calendar
             return abs % 1 === 0 ? abs.toString() : abs.toFixed(1);
           };
 
-          const isTodayDay = isToday(day);
+
 
           return (
               <div
@@ -68,14 +68,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ mode, currentDate, calendar
                   {isWorkDay && isNext && <div className="absolute -right-1 top-1/2 w-[55%] h-1 bg-[#D40511] -translate-y-1/2 z-0" />}
 
                   <div className="relative z-10">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm transition-all ${
-                        isTodayDay ? 'scale-[1.3] z-20 shadow-md' : ''
-                      } ${
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm ${
                         isWorkDay
                           ? (isFact && shift?.isCompleted ? 'bg-[#FFCC00] text-[#D40511] border-2 border-[#D40511]' : 'bg-[#D40511] text-white border-2 border-white')
-                          : (isTodayDay
-                              ? 'bg-white text-slate-600 border-2 border-[#D40511]'
-                              : 'bg-white text-slate-600 border border-slate-100')
+                          : 'bg-white text-slate-600 border border-slate-100'
                       }`}>
                           {format(day, 'd')}
                       </div>
