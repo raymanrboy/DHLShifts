@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, isSameMonth } from 'date-fns';
+import { format, isSameMonth, isToday } from 'date-fns';
 import { ShiftData } from '../types';
 import { haptic, calcHours } from '../utils';
 
@@ -66,12 +66,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ mode, currentDate, calendar
                   {isWorkDay && isNext && <div className="absolute -right-1 top-1/2 w-[55%] h-1 bg-[#D40511] -translate-y-1/2 z-0" />}
 
                   <div className="relative z-10">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm ${
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm relative ${
                         isWorkDay
                           ? (isFact && shift?.isCompleted ? 'bg-[#FFCC00] text-[#D40511] border-2 border-[#D40511]' : 'bg-[#D40511] text-white border-2 border-white')
                           : 'bg-white text-slate-600 border border-slate-100'
                       }`}>
                           {format(day, 'd')}
+                          {isToday(day) && (
+                            <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${
+                              isWorkDay
+                                ? (isFact && shift?.isCompleted ? 'bg-[#D40511]' : 'bg-white')
+                                : 'bg-[#D40511]'
+                            }`} />
+                          )}
                       </div>
 
                       {/* Daily Balance Badge */}
