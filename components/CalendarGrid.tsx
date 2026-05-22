@@ -57,11 +57,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ mode, currentDate, calendar
           };
 
           const isTodayDay = isToday(day);
-          const todayClass = isTodayDay
-            ? (isWorkDay
-                ? (isFact && shift?.isCompleted ? 'ring-2 ring-[#D40511] ring-offset-2 scale-110 z-20' : 'ring-2 ring-[#FFCC00] ring-offset-2 scale-110 z-20')
-                : 'ring-2 ring-[#D40511] ring-offset-2 scale-110 z-20')
-            : '';
 
           return (
               <div
@@ -73,10 +68,12 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ mode, currentDate, calendar
                   {isWorkDay && isNext && <div className="absolute -right-1 top-1/2 w-[55%] h-1 bg-[#D40511] -translate-y-1/2 z-0" />}
 
                   <div className="relative z-10">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm transition-all ${todayClass} ${
-                        isWorkDay
-                          ? (isFact && shift?.isCompleted ? 'bg-[#FFCC00] text-[#D40511] border-2 border-[#D40511]' : 'bg-[#D40511] text-white border-2 border-white')
-                          : 'bg-white text-slate-600 border border-slate-100'
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm transition-all ${
+                        isTodayDay
+                          ? 'bg-slate-900 text-white border-2 border-slate-900 z-20 scale-105 shadow-md'
+                          : (isWorkDay
+                              ? (isFact && shift?.isCompleted ? 'bg-[#FFCC00] text-[#D40511] border-2 border-[#D40511]' : 'bg-[#D40511] text-white border-2 border-white')
+                              : 'bg-white text-slate-600 border border-slate-100')
                       }`}>
                           {format(day, 'd')}
                       </div>
