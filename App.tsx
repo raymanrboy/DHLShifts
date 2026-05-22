@@ -1,3 +1,4 @@
+// @wiki: overview.md (Architecture), technical/dependency-graph.md (State Topology), technical/state-storage.md (Autosave loop)
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   format,

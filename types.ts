@@ -1,3 +1,4 @@
+// @wiki: technical/symbol-map.md (API contracts), concepts/telegram-integration.md (Haptics/Cloud interfaces)
 export interface ShiftData {
   date: string;        // "YYYY-MM-DD" — also used as key
   isWorkDay: boolean;

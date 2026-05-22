@@ -1,3 +1,4 @@
+// @wiki: technical/symbol-map.md (Utility contracts), concepts/storage-optimization.md (Shift compression strings)
 import { format } from 'date-fns';
 import { ShiftData } from './types';
 
