@@ -69,10 +69,12 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ mode, currentDate, calendar
 
                   <div className="relative z-10">
                       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shadow-sm transition-all ${
-                        isTodayDay
-                          ? 'bg-slate-900 text-white border-2 border-slate-900 z-20 scale-105 shadow-md'
-                          : (isWorkDay
-                              ? (isFact && shift?.isCompleted ? 'bg-[#FFCC00] text-[#D40511] border-2 border-[#D40511]' : 'bg-[#D40511] text-white border-2 border-white')
+                        isTodayDay ? 'scale-[1.3] z-20 shadow-md' : ''
+                      } ${
+                        isWorkDay
+                          ? (isFact && shift?.isCompleted ? 'bg-[#FFCC00] text-[#D40511] border-2 border-[#D40511]' : 'bg-[#D40511] text-white border-2 border-white')
+                          : (isTodayDay
+                              ? 'bg-white text-slate-600 border-2 border-[#D40511]'
                               : 'bg-white text-slate-600 border border-slate-100')
                       }`}>
                           {format(day, 'd')}
