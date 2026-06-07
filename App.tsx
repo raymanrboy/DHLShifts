@@ -115,7 +115,7 @@ const InnerApp: React.FC<{
   const daysLabel = t('days') as string[];
 
   return (
-    <div className="min-h-screen bg-[#FFCC00] text-black pb-32 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-transparent text-black pb-32 overflow-x-hidden font-sans">
       <div
         className="flex justify-center w-full px-6 pb-2 pointer-events-none"
         style={{
@@ -293,7 +293,7 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FFCC00] flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <Loader2 className="animate-spin text-[#D40511] w-10 h-10" />
       </div>
     );
