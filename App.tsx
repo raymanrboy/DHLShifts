@@ -115,14 +115,14 @@ const InnerApp: React.FC<{
   const daysLabel = t('days') as string[];
 
   return (
-    <div className="min-h-screen bg-transparent text-black pb-32 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#FFCC00] text-black pb-32 overflow-x-hidden font-sans">
       <div
         className="flex justify-center w-full px-6 pb-2 pointer-events-none"
         style={{
           paddingTop: 'calc(var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 24px))) + 52px)'
         }}
       >
-         <img src="./logo.webp" alt="DHL Logo" className="h-[134px] sm:h-[154px] w-auto object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)]" />
+         <img src="/logo.webp" alt="DHL Logo" className="h-[134px] sm:h-[154px] w-auto object-contain drop-shadow-sm" />
       </div>
 
       <main className="max-w-xl mx-auto px-2 space-y-6">
@@ -293,7 +293,7 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFCC00] flex items-center justify-center">
         <Loader2 className="animate-spin text-[#D40511] w-10 h-10" />
       </div>
     );
