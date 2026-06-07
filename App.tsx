@@ -122,7 +122,7 @@ const InnerApp: React.FC<{
           paddingTop: 'calc(var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 24px))) + 52px)'
         }}
       >
-         <img src="/logo.webp" alt="DHL Logo" className="h-[134px] sm:h-[154px] w-auto object-contain drop-shadow-sm" />
+         <img src="./logo.webp" alt="DHL Logo" className="h-[134px] sm:h-[154px] w-auto object-contain drop-shadow-sm" />
       </div>
 
       <main className="max-w-xl mx-auto px-2 space-y-6">
