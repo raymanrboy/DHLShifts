@@ -22,7 +22,7 @@ body {
   background-color: var(--dhl-yellow);
   background-image: url('./public/dhl_background_pattern.png');
   background-repeat: repeat;
-  background-size: 240px 240px;
+  background-size: auto;
   user-select: none;
 }
 
